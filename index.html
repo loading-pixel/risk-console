@@ -1,0 +1,1634 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Risk Control Console</title>
+<meta name="theme-color" content="#08090B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Risk Console">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F3EE; --panel:#FFFFFF; --panel-2:#EFECE5; --line:rgba(8,9,11,.10); --line-2:rgba(8,9,11,.18);
+  --text:#101114; --muted:rgba(16,17,20,.64); --faint:rgba(16,17,20,.46);
+  --gold:#8A6A2F; --gold-fill:#D4AF6A; --gold-hi:#C49B4E; --on-gold:#08090B; --gold-tint:rgba(198,161,91,.16);
+  --pos:#0B8474; --neg:#B93A2E; --pos-tint:rgba(11,132,116,.10); --neg-tint:rgba(185,58,46,.09);
+  --input:#FFFFFF; --hover:rgba(8,9,11,.05); --shadow:0 1px 2px rgba(8,9,11,.06);
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#08090B; --panel:#0E0F12; --panel-2:#15171B; --line:rgba(255,255,255,.07); --line-2:rgba(255,255,255,.14);
+    --text:rgba(255,255,255,.88); --muted:rgba(255,255,255,.58); --faint:rgba(255,255,255,.40);
+    --gold:#D4AF6A; --gold-fill:#D4AF6A; --gold-hi:#E4C988; --on-gold:#08090B; --gold-tint:rgba(198,161,91,.15);
+    --pos:#2DD4BF; --neg:#F07167; --pos-tint:rgba(45,212,191,.09); --neg-tint:rgba(240,113,103,.10);
+    --input:rgba(255,255,255,.04); --hover:rgba(255,255,255,.05); --shadow:none;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#08090B; --panel:#0E0F12; --panel-2:#15171B; --line:rgba(255,255,255,.07); --line-2:rgba(255,255,255,.14);
+  --text:rgba(255,255,255,.88); --muted:rgba(255,255,255,.58); --faint:rgba(255,255,255,.40);
+  --gold:#D4AF6A; --gold-fill:#D4AF6A; --gold-hi:#E4C988; --on-gold:#08090B; --gold-tint:rgba(198,161,91,.15);
+  --pos:#2DD4BF; --neg:#F07167; --pos-tint:rgba(45,212,191,.09); --neg-tint:rgba(240,113,103,.10);
+  --input:rgba(255,255,255,.04); --hover:rgba(255,255,255,.05); --shadow:none;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.5 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.app{max-width:1480px;margin:0 auto;padding:0 24px 64px}
+@media (max-width:640px){.app{padding:0 16px 48px}}
+a{color:var(--gold)}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
+h1{font-size:26px} h2{font-size:20px} h3{font-size:15px}
+p{margin:0}
+.muted{color:var(--muted)} .faint{color:var(--faint)}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+code{font-family:var(--mono);font-size:12px;background:var(--panel-2);padding:1px 5px;border-radius:4px}
+
+/* top bar + nav */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:calc(20px + env(safe-area-inset-top)) 0 14px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--gold-hi),var(--gold-fill));flex:none;position:relative}
+.mark::after{content:"";position:absolute;inset:9px;border:2px solid var(--on-gold);border-radius:3px;opacity:.85}
+.brand-name{font-weight:700;letter-spacing:-.01em}
+.brand-sub{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint)}
+.top-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.backup-age{font-size:11px;color:var(--faint)}
+.sync{font-size:12px;color:var(--faint);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.sync::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.sync.ok::before{background:var(--pos)} .sync.err::before{background:var(--neg)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;margin-bottom:24px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{appearance:none;border:0;background:none;color:var(--muted);font:500 14px var(--sans);padding:10px 12px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.is-active{color:var(--text);border-bottom-color:var(--gold-fill)}
+
+/* shared surfaces */
+.view{display:none} .view.is-active{display:block}
+.stack{display:flex;flex-direction:column;gap:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+@media (max-width:640px){.card{padding:16px}}
+.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.page-head p{color:var(--muted);margin-top:6px;max-width:760px}
+.banner{border:1px solid color-mix(in srgb,var(--gold-fill) 40%,transparent);background:var(--gold-tint);border-radius:12px;padding:12px 16px;font-size:13px}
+.banner strong{color:var(--gold)}
+.note{font-size:13px;color:var(--muted)}
+
+/* controls */
+label.f{display:flex;flex-direction:column;gap:6px;min-width:0}
+label.f>span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+input,select,textarea{font:14px var(--sans);color:var(--text);background:var(--input);border:1px solid var(--line-2);border-radius:8px;padding:8px 10px;min-width:0;width:100%}
+input[type=number]{font-family:var(--mono)}
+input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--gold-fill) 55%,transparent);outline-offset:0;border-color:var(--gold-fill)}
+input[readonly]{background:var(--panel-2);color:var(--muted)}
+input:disabled{opacity:.55}
+textarea{resize:vertical}
+input::placeholder,textarea::placeholder{font-family:var(--sans);color:var(--faint)}
+@media (max-width:480px){.brand-sub{display:none}}
+.btn{appearance:none;font:600 13px var(--sans);border-radius:8px;padding:8px 14px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:var(--gold-fill)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--gold-fill);border-color:var(--gold-fill);color:var(--on-gold)}
+.btn.primary:hover:not(:disabled){background:var(--gold-hi)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn.danger:hover:not(:disabled){border-color:var(--neg);color:var(--neg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.err{color:var(--neg);font-size:13px}
+
+/* account form */
+.acct-form{display:flex;flex-direction:column;gap:14px}
+.count{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.count>span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);width:100%}
+.seg{display:flex;gap:6px}
+.seg .btn.on{background:var(--gold-fill);border-color:var(--gold-fill);color:var(--on-gold)}
+.count label.f{width:110px}
+
+/* roster */
+.roster-head{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.roster-head p{color:var(--muted);margin-top:4px;max-width:560px}
+.bankroll{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.bankroll .row{align-items:flex-end}
+.bankroll label.f{width:130px}
+.bankroll .cap{font-size:12px;color:var(--muted);max-width:460px;text-align:right}
+@media (max-width:720px){.bankroll{align-items:stretch}.bankroll .cap{text-align:left}}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:18px 0 12px}
+.toolbar label.f{width:auto;min-width:150px}
+.legend{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-left:auto;padding-bottom:8px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--pos);flex:none}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);background:var(--panel-2);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tr.pos td{background:var(--pos-tint)} tr.neg td{background:var(--neg-tint)}
+tr.drop-over td{box-shadow:inset 0 2px 0 var(--gold-fill)}
+tr.dragging{opacity:.45}
+td.click{cursor:pointer;border-radius:0} td.click:hover,span.click:hover{background:var(--hover)}
+span.click{cursor:pointer;border-radius:5px;padding:2px 4px;margin:-2px -4px}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.plan{white-space:normal;font-style:italic;color:var(--gold);min-width:260px}
+td.notes{max-width:220px;overflow:hidden;text-overflow:ellipsis}
+td.empty{text-align:center;color:var(--muted);padding:28px}
+.tick{width:26px;height:26px;border-radius:7px;border:1.5px solid var(--line-2);background:transparent;color:var(--on-gold);font-weight:700;cursor:pointer;display:grid;place-items:center;padding:0}
+.tick.on{background:var(--pos);border-color:var(--pos);color:#06201c}
+.tick:disabled{opacity:.5}
+input.pnl{width:92px;padding:5px 8px;font-family:var(--mono);font-size:13px}
+input.cell{padding:4px 6px;font-size:13px;width:130px}
+.cellflex{display:flex;align-items:center;gap:8px}
+.handle{cursor:grab;color:var(--faint);user-select:none;font-size:15px;line-height:1}
+.arrows{display:flex;flex-direction:column}
+.arrows button{appearance:none;border:0;background:none;color:var(--faint);font-size:10px;line-height:1;padding:1px 3px;cursor:pointer}
+.arrows button:hover:not(:disabled){color:var(--gold)}
+.arrows button:disabled{opacity:.25;cursor:default}
+.foot{display:flex;flex-direction:column;gap:4px;margin-top:14px;font-size:12px;color:var(--muted)}
+details.approach{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--panel-2)}
+details.approach+details.approach{margin-top:10px}
+details.approach summary{cursor:pointer;font-weight:600}
+details.approach ul{margin:10px 0 2px;padding-left:18px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.status{display:flex;align-items:center;gap:8px}
+.pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--panel-2);color:var(--muted)}
+.pill.gold{background:var(--gold-tint);color:var(--gold)}
+.pill.pos{background:var(--pos-tint);color:var(--pos)}
+
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.metric{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.metric .k{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.metric .v{font:600 22px var(--mono);margin-top:4px;letter-spacing:-.02em}
+.metric .h{font-size:12px;color:var(--muted);margin-top:2px}
+.metric.accent{border-color:color-mix(in srgb,var(--gold-fill) 45%,transparent);background:var(--gold-tint)}
+.metric.accent .v{color:var(--gold)}
+.metric.good .v{color:var(--pos)} .metric.bad .v{color:var(--neg)} .metric.warn .v{color:var(--gold)}
+.up{color:var(--neg)} .down{color:var(--pos)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{appearance:none;border:1px solid var(--line-2);background:transparent;color:var(--muted);border-radius:999px;padding:5px 12px;font:500 12px var(--sans);cursor:pointer}
+.chip.is-active{background:var(--gold-fill);border-color:var(--gold-fill);color:var(--on-gold)}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:140px 1fr auto;gap:12px;align-items:center;font-size:13px}
+.bar .track{height:8px;border-radius:99px;background:var(--panel-2);overflow:hidden}
+.bar .fill{height:100%;background:var(--gold-fill);border-radius:99px}
+@media (max-width:560px){.bar{grid-template-columns:100px 1fr}.bar .amt{grid-column:1/-1}}
+.months{display:flex;gap:8px;align-items:flex-end;height:160px;overflow-x:auto;padding-top:18px}
+.month{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:46px;height:100%;justify-content:flex-end;font-size:11px;color:var(--muted)}
+.month .col{width:26px;background:var(--gold-fill);border-radius:5px 5px 2px 2px;min-height:2px}
+input.cnt{width:70px;padding:4px 6px}
+.sec-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+
+/* variance */
+.days{display:flex;gap:6px}
+.day{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line-2)}
+.day.is-done{background:var(--pos);border-color:var(--pos)}
+.actions{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.act{appearance:none;text-align:left;border:1px solid var(--line-2);background:var(--panel-2);border-radius:10px;padding:12px 14px;cursor:pointer;color:var(--text);display:flex;flex-direction:column;gap:2px;font:inherit}
+.act:hover:not(:disabled){border-color:var(--gold-fill)}
+.act:disabled{opacity:.45;cursor:not-allowed}
+.act .a1{font-weight:600} .act .a2{font-size:12px;color:var(--muted)}
+.act.primary{background:var(--gold-tint);border-color:color-mix(in srgb,var(--gold-fill) 50%,transparent)}
+.chart{position:relative;height:170px}
+.chart svg{width:100%;height:160px;display:block}
+.chart .zero{stroke:var(--line-2);stroke-dasharray:4 4}
+.chart .line{fill:none;stroke:var(--pos);stroke-width:2;vector-effect:non-scaling-stroke}
+.chart .line.is-down{stroke:var(--neg)}
+.chart .lab{position:absolute;right:0;font:11px var(--mono);color:var(--faint)}
+.tag{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--panel-2)}
+.tag.win,.tag.eval_pass,.tag.payout{background:var(--pos-tint);color:var(--pos)}
+.tag.loss,.tag.eval_fail,.tag.blown{background:var(--neg-tint);color:var(--neg)}
+
+/* calculator */
+.calc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.result{font:600 18px var(--mono);margin-top:14px;color:var(--gold)}
+.triad{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:end;max-width:560px}
+.triad .op{padding-bottom:9px;color:var(--faint);font-weight:600}
+ul.plain{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+ul.plain li{display:flex;justify-content:space-between;gap:12px;padding:6px 10px;border-radius:8px;background:var(--panel-2);font-size:13px}
+ul.plain li strong,ul.plain li .r{font-family:var(--mono)}
+
+/* prop firm cards */
+.firms{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.firm dl{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin:14px 0}
+.firm dt{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.firm dd{margin:2px 0 0;font-family:var(--mono);font-size:13px}
+.firm .code{color:var(--gold);font-weight:600}
+
+/* modal + toast */
+#modal.open{position:fixed;inset:0;z-index:50}
+.modal-back{position:absolute;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:16px}
+.modal{background:var(--panel);border:1px solid var(--line-2);border-radius:14px;padding:20px;max-width:420px;width:100%}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:calc(100% - 32px);max-width:480px}
+.toast{background:var(--panel);border:1px solid var(--line-2);border-left:3px solid var(--gold-fill);padding:10px 14px;border-radius:10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"></span>
+      <div><div class="brand-name">Risk Control Console</div><div class="brand-sub">Private trading operations</div></div>
+    </div>
+    <div class="top-right">
+      <div class="sync" id="sync">Loading…</div>
+      <button type="button" class="btn sm" id="bk-export" title="Save every account, backtest, cost, payout and setting to one file">Export backup</button>
+      <button type="button" class="btn sm" id="bk-import" title="Replace everything here with a backup file">Import backup</button>
+      <input type="file" id="bk-file" accept=".json,application/json" hidden>
+    </div>
+  </header>
+  <nav class="tabs" id="tabs" role="tablist">
+    <button class="tab" data-tab="dashboard">Dashboard</button>
+    <button class="tab" data-tab="spend">Spend</button>
+    <button class="tab" data-tab="backtesting">Backtesting</button>
+    <button class="tab" data-tab="variance">Variance</button>
+    <button class="tab" data-tab="calculator">Calculator</button>
+    <button class="tab" data-tab="prop-firms">Recommended prop firms</button>
+  </nav>
+  <main>
+    <section class="view" id="view-dashboard"></section>
+    <section class="view" id="view-spend"></section>
+    <section class="view" id="view-backtesting"></section>
+    <section class="view" id="view-variance"></section>
+    <section class="view" id="view-calculator"></section>
+    <section class="view" id="view-prop-firms"></section>
+  </main>
+</div>
+<div id="modal"></div>
+<div id="toast"></div>
+<script>
+'use strict';
+/* ============================================================
+   Rules data (read off the original site's server, 94 bands)
+   [type, size, stage E/F, from>=, below<, SL|'BUF', TP, TP factor of buffer, cap, plan]
+   ============================================================ */
+const BANDS = [["Topstep 50K",50000,"E",0,53040,1000,1520,0,53040,"TOPSTEP 50K EVAL"],["Topstep 50K",50000,"E",53040,1e12,1000,750,0,0,"TOPSTEP 50K EVAL"],["Topstep 50K",50000,"F",0,50000.01,1000,4000,0,0,"TOPSTEP 50K FUNDED"],["Topstep 50K",50000,"F",50000.01,52000.01,500,500,0,0,"TOPSTEP 50K FUNDED ABOVE"],["Topstep 50K",50000,"F",52000.01,1e12,200,200,0,0,"TOPSTEP 50K FUNDED ABOVE 52K"],["Topstep 50K RTP",50000,"E",0,53040,1000,1520,0,53040,"TOPSTEP 50K RTP EVAL"],["Topstep 50K RTP",50000,"E",53040,1e12,1000,750,0,0,"TOPSTEP 50K RTP EVAL"],["Topstep 50K RTP",50000,"F",0,55000,1000,2000,0,55000,"TOPSTEP 50K RTP FUNDED"],["Topstep 50K RTP",50000,"F",55000,1e12,0,0,0,0,"TOPSTEP 50K RTP PAYOUT MODE"],["Topstep 150K",150000,"E",0,159100,2000,4550,0,159100,"TOPSTEP 150K EVAL"],["Topstep 150K",150000,"E",159100,1e12,2000,1500,0,0,"TOPSTEP 150K EVAL"],["Topstep 150K",150000,"F",0,150000.01,2000,6000,0,0,"TOPSTEP 150K FUNDED"],["Topstep 150K",150000,"F",150000.01,1e12,200,200,0,0,"TOPSTEP 150K FUNDED ABOVE"],["MFF Rapid EOD",50000,"E",0,53000,1000,750,0,53000,"MFF RAPID EOD 50K EVAL"],["MFF Rapid EOD",50000,"E",53000,1e12,1000,750,0,0,"MFF RAPID EOD 50K EVAL"],["MFF Rapid EOD",50000,"F",0,52000.01,1000,3000,0,0,"MFF RAPID EOD 50K FUNDED"],["MFF Rapid EOD",50000,"F",52000.01,1e12,1000,1500,0,0,"MFF RAPID EOD 50K FUNDED ABOVE 52K"],["MFF Flex 50K (no add-on)",50000,"E",0,53000,1000,750,0,53000,"MFF RAPID EOD 50K EVAL"],["MFF Flex 50K (no add-on)",50000,"E",53000,1e12,1000,750,0,0,"MFF RAPID EOD 50K EVAL"],["MFF Flex 50K (no add-on)",50000,"F",0,52000.01,1000,3000,0,0,"MFF RAPID EOD 50K FUNDED"],["MFF Flex 50K (no add-on)",50000,"F",52000.01,1e12,1000,1500,0,0,"MFF RAPID EOD 50K FUNDED ABOVE 52K"],["FundedNext 50K Flex",50000,"E",0,52500,750,1000,0,52500,"FN FLEX 50K EVAL"],["FundedNext 50K Flex",50000,"E",52500,1e12,750,562.5,0,0,"FN FLEX 50K EVAL"],["FundedNext 50K Flex",50000,"F",0,50000.01,750,3000,0,0,"FN FLEX 50K FUNDED"],["FundedNext 50K Flex",50000,"F",50000.01,1e12,200,200,0,0,"FN FLEX 50K FUNDED ABOVE"],["FundedNext 150K Flex",150000,"E",0,156400,4000,3200,0,0,"FN FLEX 150K EVAL"],["FundedNext 150K Flex",150000,"E",156400,158000,"BUF",999999,0,158000,"FN FLEX 150K EVAL LAST"],["FundedNext 150K Flex",150000,"E",158000,1e12,"BUF",0,0.75,0,"FN FLEX 150K EVAL LAST"],["FundedNext 150K Flex",150000,"F",0,150000.01,4000,12000,0,0,"FN FLEX 150K FUNDED"],["FundedNext 150K Flex",150000,"F",150000.01,1e12,2000,270,0,0,"FN FLEX 150K FUNDED ABOVE"],["Fundedseat 50K Flex",50000,"E",0,53000,1000,1000,0,53000,"FUNDEDSEAT 50K FLEX EVAL"],["Fundedseat 50K Flex",50000,"E",53000,1e12,1000,750,0,0,"FUNDEDSEAT 50K FLEX EVAL"],["Fundedseat 50K Flex",50000,"F",0,49500,1000,4000,0,0,"FUNDEDSEAT 50K FLEX FUNDED RECOVERY"],["Fundedseat 50K Flex",50000,"F",49500,51000.01,1000,3000,0,0,"FUNDEDSEAT 50K FLEX FUNDED"],["Fundedseat 50K Flex",50000,"F",51000.01,1e12,270,270,0,0,"FUNDEDSEAT 50K FLEX FUNDED ABOVE"],["FundedSeat Standard Daily",50000,"E",0,53000,1000,1520,0,53000,"FUNDEDSEAT STANDARD DAILY EVAL"],["FundedSeat Standard Daily",50000,"E",53000,1e12,1000,750,0,0,"FUNDEDSEAT STANDARD DAILY EVAL"],["FundedSeat Standard Daily",50000,"F",0,52000.01,1000,3000,0,0,"FUNDEDSEAT STANDARD DAILY FUNDED"],["FundedSeat Standard Daily",50000,"F",52000.01,1e12,1000,1500,0,0,"FUNDEDSEAT STANDARD DAILY FUNDED ABOVE 52K"],["Alpha Zero 100K",100000,"E",0,106040,2000,999999,0,106040,"ALPHA ZERO 100K EVAL"],["Alpha Zero 100K",100000,"E",106040,1e12,2000,1500,0,0,"ALPHA ZERO 100K EVAL"],["Alpha Zero 100K",100000,"F",0,100000.01,2000,4000,0,0,"ALPHA ZERO 100K FUNDED"],["Alpha Zero 100K",100000,"F",100000.01,1e12,2000,1000,0,0,"ALPHA ZERO 100K FUNDED ABOVE"],["E8 Starter Zero 100K",100000,"E",0,106550,"BUF",2600,0,106550,"E8 STARTER ZERO 100K EVAL"],["E8 Starter Zero 100K",100000,"E",106550,1e12,"BUF",0,0.75,0,"E8 STARTER ZERO 100K EVAL"],["E8 Starter Zero 100K",100000,"F",0,100000.01,"BUF",6000,0,0,"E8 STARTER ZERO 100K FUNDED"],["E8 Starter Zero 100K",100000,"F",100000.01,1e12,4400,1600,0,0,"E8 STARTER ZERO 100K FUNDED ABOVE"],["Alpha Premium 50K",50000,"E",0,53040,1000,1520,0,53040,"ALPHA PREMIUM 50K EVAL"],["Alpha Premium 50K",50000,"E",53040,1e12,1000,750,0,0,"ALPHA PREMIUM 50K EVAL"],["Alpha Premium 50K",50000,"F",0,50000.01,1000,4000,0,0,"ALPHA PREMIUM 50K FUNDED"],["Alpha Premium 50K",50000,"F",50000.01,52000.01,500,500,0,0,"ALPHA PREMIUM 50K FUNDED ABOVE"],["Alpha Premium 50K",50000,"F",52000.01,1e12,215,215,0,0,"ALPHA PREMIUM 50K FUNDED ABOVE 52K"],["Lucid Flex 25K",25000,"E",0,1e12,500,630,0,0,"LUCID FLEX 25K EVAL"],["Lucid Flex 25K",25000,"F",0,25000.01,500,2000,0,0,"LUCID FLEX 25K FUNDED"],["Lucid Flex 25K",25000,"F",25000.01,1e12,200,200,0,0,"LUCID FLEX 25K FUNDED ABOVE"],["Lucid Flex 50K",50000,"E",0,53040,1000,1520,0,53040,"LUCID FLEX 50K EVAL"],["Lucid Flex 50K",50000,"E",53040,1e12,1000,750,0,0,"LUCID FLEX 50K EVAL"],["Lucid Flex 50K",50000,"F",0,50000.01,1000,4000,0,0,"LUCID FLEX 50K FUNDED"],["Lucid Flex 50K",50000,"F",50000.01,52000.01,200,200,0,0,"LUCID FLEX 50K FUNDED ABOVE"],["Lucid Flex 50K",50000,"F",52000.01,1e12,200,200,0,0,"LUCID FLEX 50K FUNDED ABOVE 52K"],["Tradeify Select",50000,"E",0,53000,1000,1000,0,53000,"TRADEIFY SELECT 50K EVAL"],["Tradeify Select",50000,"E",53000,1e12,1000,750,0,0,"TRADEIFY SELECT 50K EVAL"],["Tradeify Select",50000,"F",0,50000.01,1000,4000,0,0,"TRADEIFY SELECT 50K FUNDED"],["Tradeify Select",50000,"F",50000.01,1e12,200,200,0,0,"TRADEIFY SELECT 50K FUNDED ABOVE"],["Tradeify Select",150000,"E",0,157200,4500,3600,0,0,"TRADEIFY 150K EVAL"],["Tradeify Select",150000,"E",157200,159000,4500,999999,0,159000,"TRADEIFY 150K EVAL"],["Tradeify Select",150000,"E",159000,1e12,4500,3375,0,0,"TRADEIFY 150K EVAL"],["Tradeify Select",150000,"F",0,150000.01,4500,12500,0,0,"TRADEIFY 150K FUNDED"],["Tradeify Select",150000,"F",150000.01,1e12,2000,270,0,0,"TRADEIFY 150K FUNDED ABOVE"],["Apex EOD 50K",50000,"E",0,53020,1000,999999,0,53020,"APEX EOD 50K EVAL"],["Apex EOD 50K",50000,"E",53020,1e12,1000,750,0,0,"APEX EOD 50K EVAL"],["Apex EOD 50K",50000,"F",0,54000,1000,2000,0,0,"APEX EOD 50K FUNDED"],["Apex EOD 50K",50000,"F",54000,1e12,265,265,0,0,"APEX EOD 50K FUNDED WINNING DAYS"],["Apex Legacy 50K",50000,"E",0,53050,2500,3050,0,53050,"APEX LEGACY 50K EVAL"],["Apex Legacy 50K",50000,"E",53050,1e12,2500,1875,0,0,"APEX LEGACY 50K EVAL"],["Apex Legacy 50K",50000,"F",0,1e12,700,1400,0,0,"APEX LEGACY 50K FUNDED"],["Apex Intraday 50K",50000,"E",0,53050,1000,999999,0,53050,"APEX INTRADAY 50K EVAL"],["Apex Intraday 50K",50000,"E",53050,1e12,1000,750,0,0,"APEX INTRADAY 50K EVAL"],["Apex Intraday 50K",50000,"F",0,54000.01,1000,2000,0,0,"APEX INTRADAY 50K FUNDED"],["Apex Intraday 50K",50000,"F",54000.01,1e12,270,270,0,0,"APEX INTRADAY 50K FUNDED WINNING DAYS"],["Blue Guardian 50K Reserve",50000,"E",0,1e12,2000,1520,0,0,"BLUE GUARDIAN 50K RESERVE EVAL"],["Blue Guardian 50K Reserve",50000,"F",0,50000.01,2000,4000,0,0,"BLUE GUARDIAN 50K RESERVE FUNDED"],["Blue Guardian 50K Reserve",50000,"F",50000.01,1e12,1000,160,0,0,"BLUE GUARDIAN 50K RESERVE FUNDED ABOVE"],["Futures Elite Flex",50000,"E",0,53040,2000,1520,0,53040,"FUTURES ELITE EVAL"],["Futures Elite Flex",50000,"E",53040,1e12,2000,1500,0,0,"FUTURES ELITE EVAL"],["Futures Elite Flex",50000,"F",0,1e12,2000,1000,0,0,"FUTURES ELITE FUNDED"],["BluSky Launch 50K",50000,"E",0,53040,2000,1520,0,53040,"BLUSKY LAUNCH 50K EVAL"],["BluSky Launch 50K",50000,"E",53040,1e12,2000,1500,0,0,"BLUSKY LAUNCH 50K EVAL"],["BluSky Launch 50K",50000,"F",0,53000,2000,1000,0,0,"BLUSKY LAUNCH 50K FUNDED CLIMB"],["BluSky Launch 50K",50000,"F",53000,1e12,1000,2500,0,0,"BLUSKY LAUNCH 50K FUNDED WEEKLY"],["Take Profit Trader 50K",50000,"E",0,53040,2000,1520,0,53040,"TPT 50K EVAL"],["Take Profit Trader 50K",50000,"E",53040,1e12,2000,1500,0,0,"TPT 50K EVAL"],["Take Profit Trader 50K",50000,"F",0,53000,"BUF",3000,0,0,"TPT 50K FUNDED DAY 1"],["Take Profit Trader 50K",50000,"F",53000,1e12,1000,1000,0,0,"TPT 50K FUNDED DAILY"]];
+const RTP_TEXT = 'Use 1 MNQ, $2 profit target — do this 3× and take payout. Repeat until account gone.';
+
+const FIRM_OPTIONS = [
+  ['Topstep 50K','Topstep 50K'],['Topstep 50K RTP','Topstep 50K RTP'],['Topstep 150K','Topstep 150K'],
+  ['MFF Rapid EOD','MFF Rapid EOD 50K'],['FundedNext 50K Flex','FundedNext 50K Flex'],['FundedNext 150K Flex','FundedNext 150K Flex'],
+  ['Fundedseat 50K Flex','Fundedseat 50K Flex'],['FundedSeat Standard Daily','FundedSeat Standard Daily'],['Alpha Zero 100K','Alpha Zero 100K'],
+  ['E8 Starter Zero 100K','E8 Starter Zero 100K'],['Alpha Premium 50K','Alpha Premium 50K'],['Lucid Flex 25K','Lucid Flex 25K'],
+  ['Lucid Flex 50K','Lucid Flex 50K'],['Tradeify Select','Tradeify Select 50K'],['Apex EOD 50K','Apex EOD 50K'],
+  ['Apex Legacy 50K','Apex Legacy 50K'],['Apex Intraday 50K','Apex Intraday 50K'],['Blue Guardian 50K Reserve','Blue Guardian 50K Reserve'],
+  ['Futures Elite Flex','Futures Elite Flex'],['BluSky Launch 50K','BluSky Launch 50K'],['Take Profit Trader 50K','Take Profit Trader 50K'],
+];
+const TYPE_DEFAULTS = {
+  'Topstep 50K':[5e4,2e3],'Topstep 50K RTP':[5e4,2e3],'Topstep 150K':[15e4,4500],'MFF Rapid EOD':[5e4,2e3],
+  'FundedNext 50K Flex':[5e4,1500],'FundedNext 150K Flex':[15e4,4500],'Fundedseat 50K Flex':[5e4,2e3],
+  'FundedSeat Standard Daily':[5e4,2e3],'Alpha Zero 100K':[1e5,3e3],'E8 Starter Zero 100K':[1e5,3e3],
+  'Alpha Premium 50K':[5e4,2e3],'Lucid Flex 25K':[25e3,1500],'Lucid Flex 50K':[5e4,2e3],'Tradeify Select':[5e4,2e3],
+  'Apex EOD 50K':[5e4,2e3],'Apex Legacy 50K':[5e4,2500],'Apex Intraday 50K':[5e4,2e3],'Blue Guardian 50K Reserve':[5e4,2e3],
+  'Futures Elite Flex':[5e4,2e3],'BluSky Launch 50K':[5e4,2e3],'Take Profit Trader 50K':[5e4,2e3],
+  'Tradeify Select 150K':[15e4,5250],'Apex 150K (Intraday)':[15e4,5e3],'Apex 150K (EOD)':[15e4,4500],
+  'Lucid Flex 150K':[15e4,4500],'Alpha Zero 150K':[15e4,4500],'FTMO Pro 150K':[15e4,4500],
+};
+
+/* ============================ helpers ============================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const money = n => { const v = Number(n); return (Number.isFinite(v) ? v : 0).toLocaleString('en-US', {style:'currency', currency:'USD'}); };
+const usd0 = e => e.toLocaleString('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0});
+const usd2 = e => e.toLocaleString('en-US', {style:'currency', currency:'USD'});
+const wFmt = e => `$${e.toLocaleString('en-US')}`;
+const oneDec = e => { const t = Math.round(10 * e) / 10; return Number.isInteger(t) ? t.toString() : t.toFixed(1); };
+const LS = {
+  raw(k){ try { return localStorage.getItem(k); } catch { return null; } },
+  setRaw(k, v){ try { localStorage.setItem(k, v); } catch {} },
+  get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k){ try { localStorage.removeItem(k); } catch {} },
+};
+
+function toast(msg){
+  const box = $('#toast'), t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg; box.appendChild(t);
+  setTimeout(() => t.remove(), 4200);
+}
+function confirmBox(msg, okLabel = 'Confirm'){
+  return new Promise(res => {
+    const m = $('#modal');
+    m.innerHTML = `<div class="modal-back"><div class="modal" role="dialog" aria-modal="true"><p>${esc(msg)}</p>
+      <div class="modal-actions"><button class="btn ghost" data-v="0">Cancel</button><button class="btn primary" data-v="1">${esc(okLabel)}</button></div></div></div>`;
+    m.classList.add('open');
+    const done = v => { m.innerHTML = ''; m.classList.remove('open'); document.removeEventListener('keydown', kd, true); res(v); };
+    const kd = e => { if (e.key === 'Escape') { e.preventDefault(); done(false); } };
+    document.addEventListener('keydown', kd, true);
+    $$('button', m).forEach(b => b.onclick = () => done(b.dataset.v === '1'));
+    $('.modal-back', m).addEventListener('click', e => { if (e.target.classList.contains('modal-back')) done(false); });
+    $('[data-v="1"]', m).focus();
+  });
+}
+
+/* Trading day (America/New_York, rolls over at 6pm ET) */
+function dayKey(d){
+  const p = new Intl.DateTimeFormat('en-US', {timeZone:'America/New_York', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', hour12:false}).formatToParts(d);
+  const g = t => Number(p.find(x => x.type === t)?.value ?? 0);
+  let h = g('hour'); if (h === 24) h = 0;
+  const r = new Date(Date.UTC(g('year'), g('month') - 1, g('day')));
+  if (h >= 18) r.setUTCDate(r.getUTCDate() + 1);
+  return r.toISOString().slice(0, 10);
+}
+const sameDay = (a, b) => dayKey(a) === dayKey(b);
+
+/* ============================ storage ============================ */
+const DOC_DEFAULTS = {
+  accounts: {items: []},
+  backtest: {items: []},
+  spend: {entries: [], payouts: [], override: null, firmOverrides: []},
+  bankroll: {bankroll: null, passRate: null, enabled: false},
+};
+const S = {};
+for (const k in DOC_DEFAULTS) S[k] = {...clone(DOC_DEFAULTS[k]), ...(LS.get('rcc:' + k, null) || {})};
+const store = {db: null, base: null, writing: {}, dirty: {}, listeners: {}};
+function onDoc(k, fn){ (store.listeners[k] ||= []).push(fn); }
+function emit(k){ (store.listeners[k] || []).forEach(fn => { try { fn(); } catch (e) { console.error(e); } }); }
+function setSync(state, text){
+  const el = $('#sync'); el.className = 'sync' + (state === 'ok' ? ' ok' : state === 'err' ? ' err' : '');
+  el.textContent = text;
+}
+function save(k){
+  LS.set('rcc:' + k, S[k]);
+  if (!store.db) return;
+  store.dirty[k] = true;
+  if (!store.writing[k]) flush(k);
+}
+async function flush(k){
+  store.writing[k] = true;
+  while (store.dirty[k]) {
+    store.dirty[k] = false;
+    const body = clone(S[k]);
+    try { await store.db.doc(store.base + k).set(body); setSync('ok', 'Saved to your account'); }
+    catch (e) {
+      if (e?.code === 'unavailable') {
+        await sleep(600 + Math.random() * 900);
+        try { await store.db.doc(store.base + k).set(clone(S[k])); continue; } catch {}
+      }
+      setSync('err', 'Not saved — ' + (e?.message || e?.code || 'error'));
+      toast('Could not save: ' + (e?.message || e?.code || 'unknown error'));
+    }
+  }
+  store.writing[k] = false;
+}
+const hasData = k => k === 'bankroll' ? S.bankroll.bankroll != null || S.bankroll.passRate != null || S.bankroll.enabled
+  : k === 'spend' ? S.spend.entries.length || S.spend.payouts.length || S.spend.override || S.spend.firmOverrides.length
+  : S[k].items.length > 0;
+async function initStore(){
+  setSync('', 'Saved on this device');
+  if (!window.claude?.use) return;
+  try {
+    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    if (!db || !user) return;
+    const id = await user.id();
+    if (!id) return;
+    store.db = db; store.base = `data/users/${id}/`;
+    setSync('ok', 'Synced to your account');
+    for (const k of Object.keys(DOC_DEFAULTS)) {
+      let seen = false;
+      db.doc(store.base + k).onSnapshot(snap => {
+        if (snap.metadata?.hasPendingWrites || store.writing[k] || store.dirty[k]) return;
+        if (!snap.exists) { if (!seen && hasData(k)) save(k); seen = true; return; }
+        seen = true;
+        const data = snap.data() || {};
+        const next = {...clone(DOC_DEFAULTS[k]), ...data};
+        if (JSON.stringify(next) === JSON.stringify(S[k])) return;
+        S[k] = next; LS.set('rcc:' + k, S[k]); emit(k);
+      }, e => setSync('err', 'Sync stopped — ' + (e?.code || 'error')));
+    }
+  } catch (e) { console.warn(e); }
+}
+
+/* ============================ risk engine ============================ */
+function computeRisk(a){
+  const st = (a.accountType ?? '').toUpperCase() === 'FUNDED' ? 'F' : 'E';
+  const bal = Number(a.currentBalance) || 0, buf = Number(a.currentBuffer) || 0, size = Number(a.startingBalance) || 0;
+  const name = (a.firmName ?? '').trim().toLowerCase();
+  for (const b of BANDS) {
+    if (b[0].toLowerCase() !== name || Math.abs(b[1] - size) > 500 || b[2] !== st || !(b[3] <= bal && bal < b[4])) continue;
+    const [, , , , , sl, tp, bf, cap, plan] = b;
+    let s = sl === 'BUF' ? buf : sl;
+    let tgt = bf ? bf * buf : tp;
+    if (cap) tgt = Math.min(tgt, Math.max(0, cap - bal));
+    if (buf > 0) s = Math.min(s, buf);
+    return {stopLoss: s, takeProfit: tgt, plan, textPlan: plan === 'TOPSTEP 50K RTP PAYOUT MODE' ? RTP_TEXT : null};
+  }
+  return null;
+}
+/* Recommended NQ contracts — line-for-line from the site */
+function contracts(e){
+  let t;
+  const a = (e.firmName ?? '').toLowerCase(), n = (e.accountType ?? '').toUpperCase();
+  const sb = Number(e.startingBalance) || 0, cb = Number(e.currentBalance) || 0;
+  const l = Math.abs(sb - 5e4) <= 500, r = Math.abs(sb - 15e4) <= 500;
+  const i = a.includes('topstep') && l, s = a.includes('mff') && l, o = a.includes('alpha premium') && l, c = a.includes('topstep') && r,
+    u = a.includes('fundednext') && l, d = a.includes('lucid') && Math.abs(sb - 25e3) <= 500, m = a.includes('lucid flex') && l,
+    p = a.includes('tradeify') && l, f = a.includes('ftmo') && r, h = (a.includes('take profit') || a.includes('takeprofit')) && l,
+    g = a.includes('apex') && a.includes('eod') && l, x = a.includes('apex') && a.includes('intraday') && l,
+    y = a.includes('fundedseat') && l && (a.includes('standard') || a.includes('daily')), b = a.includes('fundedseat') && l && !y;
+  if (s || y) t = 2;
+  else if (x) t = n === 'EVALUATION' ? 5 : cb > 54e3 ? 1 : 2;
+  else if (g) t = n === 'FUNDED' && cb >= 54e3 ? 1 : 2;
+  else if (b && n === 'FUNDED') t = cb > 51e3 ? 1 : 2;
+  else if ((i || o) && n === 'FUNDED') t = cb > 52e3 ? 1 : cb < 51e3 ? 2 : 1;
+  else if (d && n === 'FUNDED') t = cb > 25e3 ? 1 : 2;
+  else if (m && n === 'FUNDED') t = cb > sb ? 1 : 2;
+  else if (u && n === 'FUNDED') t = cb > 5e4 ? 1 : 2;
+  else if (c && n === 'FUNDED' && cb > 15e4) t = 1;
+  else if (p && n === 'FUNDED') t = cb > sb ? 1 : 2;
+  else if (p && n === 'EVALUATION' && cb < 53e3) t = 2;
+  else if (f) t = n === 'EVALUATION' ? 5 : 3;
+  else if (h) t = n === 'EVALUATION' ? 2 : 5;
+  else { const tp = e.risk?.takeProfit ?? 0; t = tp >= 4100 ? 5 : tp >= 1600 ? 3 : 2; }
+  if (n === 'FUNDED' && !h) { if (l) t = Math.min(t, 2); if (r) t = Math.min(t, 3); }
+  return t;
+}
+function points(e){
+  const t = contracts(e); if (t <= 0) return '—';
+  const a = 20 * t; return `${oneDec(e.risk.stopLoss / a)}SL / ${oneDec(e.risk.takeProfit / a)}TP`;
+}
+/* Trailing drawdown when the balance changes */
+function trailBuffer({firmName, startingBalance: a, previousBalance: n, previousBuffer: l, newBalance: r}){
+  const i = (firmName ?? '').toLowerCase().includes('apex') ? (a >= 15e4 ? 5e3 : 2500)
+    : a >= 15e4 ? 4500 : a >= 1e5 ? 3e3 : a >= 5e4 ? 2e3 : a >= 25e3 ? 1e3 : Math.round(.04 * a);
+  return r - a >= i ? Math.max(0, r - a) : Math.min(i, Math.max(0, (l > 0 ? l : i) + (r - n)));
+}
+/* Bankroll-optimised (Kelly) profit target */
+const snap25 = (e, t) => Math.round(e / t) * t;
+function kelly(e, t, a = 2e3){
+  if (!Number.isFinite(e) || !Number.isFinite(t) || !Number.isFinite(a) || e < 0 || t <= 0 || t > 100 || a <= 0)
+    return {target: null, caption: 'Enter a bankroll and pass rate.', underfunded: false};
+  const n = 100 / (t / 100), l = Math.floor(e / n), r = snap25(n, 25);
+  if (!(e > n)) return {target: null, underfunded: false, caption: `Bankroll must exceed the cost of one funded attempt (~${wFmt(r)}).`};
+  let i = -1 / 0, s = 25;
+  for (let t = 25; t <= 6e3; t += 25) {
+    if (e + t - n <= 0) continue;
+    const l = a / (t + a), r = l * Math.log(1 + (t - n) / e) + (1 - l) * Math.log(1 - n / e);
+    if (r > i) { i = r; s = t; }
+  }
+  const o = a / (Math.exp(Math.log(200) / Math.max(l, 8)) - 1), c = snap25(Math.min(s, o, 6e3), 25);
+  if (l < 8) { const e2 = 50 * Math.ceil(8 * n / 50); return {target: c, underfunded: true, caption: `Below the safe bankroll for this pass rate. Minimum is ${wFmt(e2)} (8 attempts at ~${wFmt(r)} each).`}; }
+  return c === 6e3 ? {target: c, underfunded: false, caption: `Capped at the ${wFmt(6e3)} daily rule limit.`}
+    : o <= s && o < 6e3 ? {target: c, underfunded: false, caption: 'Limited by bankroll safety, not by edge.'}
+    : {target: c, underfunded: false, caption: 'Kelly-optimal for this bankroll.'};
+}
+const SIZING_FIRMS = ['topstep', 'lucid', 'tradeify', 'fundednext', 'funded next'];
+function applyBankroll(list, {bankroll: a, passRate: n, enabled: l}){
+  if (!(l && a != null && n != null)) return list;
+  return list.map(e => {
+    if (!e.risk || (e.accountType ?? '').toUpperCase() !== 'FUNDED' || e.startingBalance > 5e4) return e;
+    const f = (e.firmName ?? '').toLowerCase();
+    if (!SIZING_FIRMS.some(x => f.includes(x)) || !(e.currentBalance === e.startingBalance && !e.lastPayoutDate)) return e;
+    const sb = e.startingBalance, {target: r} = kelly(a, n, sb >= 125e3 ? 4500 : sb >= 75e3 ? 3e3 : 2e3);
+    return r == null ? e : {...e, risk: {...e.risk, takeProfit: Math.min(r, 6e3)}};
+  });
+}
+const parseBk = (e, t) => { if (String(e).trim() === '') return null; const a = Number(e); return !Number.isFinite(a) || a <= 0 || a > t ? null : a; };
+
+/* Backtesting helpers */
+const BT_FIRMS = [['Topstep 50K', 'Topstep 50K'], ['FundedNext 50K Flex', 'FundedNext 50K Flex']];
+const BT_TAG = '[backtest]', PLAN_STD = '49+149', PLAN_PRICE = {'49+149': 49, 95: 95};
+const isFN = e => (e ?? '').toLowerCase().includes('fundednext');
+const passAt = e => isFN(e) ? 52500 : 53e3;
+const btDll = e => 2e3 * !isFN(e);
+const btNotes = (plan, act = false, slot) => { const n = [BT_TAG, `plan=${plan}`]; if (typeof slot === 'number' && slot > 0) n.push(`slot=${slot}`); if (act) n.push('activated'); return n.join(' '); };
+const slotFromLabel = e => { const t = (e ?? '').match(/(?:eval|funded|backtest)\s*#(\d+)/i); if (!t) return null; const a = Number(t[1]); return Number.isFinite(a) && a > 0 ? a : null; };
+function btInfo(e){
+  const t = e ?? '';
+  if (!t.includes(BT_TAG)) return {isBacktest: false, plan: PLAN_STD, activated: false, slot: null};
+  const a = t.match(/plan=(49\+149|95)/), l = t.match(/slot=(\d+)/), r = l ? Number(l[1]) : null;
+  return {isBacktest: true, plan: a?.[1] === '95' ? '95' : PLAN_STD, activated: /\bactivated\b/.test(t), slot: r != null && Number.isFinite(r) && r > 0 ? r : null};
+}
+const btLabel = (type, n) => (type ?? '').toUpperCase() === 'FUNDED' ? `Funded #${n}` : `Eval #${n}`;
+const btSlot = e => btInfo(e.notes).slot ?? slotFromLabel(e.label) ?? 1;
+const btPassed = e => (e.accountType ?? '').toUpperCase() === 'EVALUATION' && e.currentBalance >= passAt(e.firmName);
+const planLabel = e => e === PLAN_STD ? '$49 eval + $149 activation' : '$95 eval (no activation fee)';
+const btPricing = (firm, plan) => isFN(firm) ? '$70 eval (no activation fee)' : planLabel(plan);
+
+/* ============================================================
+   Accounts manager — the dashboard roster (and, in backtesting
+   mode, the practice roster). Mirrors the site's AccountsManager.
+   ============================================================ */
+const UNASSIGNED = 'unassigned';
+const firmKey = e => (e ?? '').trim() || UNASSIGNED;
+const typeRank = e => { const t = (e ?? '').toUpperCase(); return t === 'FUNDED' ? 0 : t === 'EVALUATION' ? 1 : 2; };
+function moveInOrder(order, visible, from, to){
+  if (from === to) return order;
+  const l = [...visible], r = l.indexOf(from), i = l.indexOf(to);
+  if (r < 0 || i < 0) return order;
+  const [s] = l.splice(r, 1); l.splice(i, 0, s);
+  const set = new Set(visible); let c = 0;
+  return order.map(e => set.has(e) ? l[c++] : e);
+}
+function sortAccounts(list, mode, order){
+  const n = [...list];
+  if (mode === 'default') return n;
+  if (mode === 'manual') {
+    const m = new Map(order.map((e, t) => [e, t]));
+    return n.sort((a, b) => (m.has(a.id) ? m.get(a.id) : Number.MAX_SAFE_INTEGER) - (m.has(b.id) ? m.get(b.id) : Number.MAX_SAFE_INTEGER));
+  }
+  return n.sort((a, b) => {
+    const x = (a.firmName ?? '').toLowerCase(), y = (b.firmName ?? '').toLowerCase();
+    if (mode === 'group-type') { const t = typeRank(a.accountType) - typeRank(b.accountType); return t !== 0 ? t : x.localeCompare(y); }
+    const r = x.localeCompare(y); return r !== 0 ? r : typeRank(a.accountType) - typeRank(b.accountType);
+  });
+}
+const parsePnl = e => { if (e == null) return null; const t = e.trim(); if (t === '' || t === '-' || t === '+') return null; const a = Number(t); return Number.isFinite(a) ? a : null; };
+const RECORDED_TIP = 'Already recorded for today and already in the balance. Click to type a correction instead.';
+
+function Manager(root, variant){
+  const BT = variant === 'backtesting', docKey = BT ? 'backtest' : 'accounts', P = BT ? 'backtesting:' : '';
+  const K = {sort: `${P}tradingsite:account-sort-mode`, order: `${P}tradingsite:account-manual-order`, pnl: `${P}tradingsite:account-daily-pnl`,
+    checks: `${P}tradingsite:account-check-overrides`, firm: `${P}tradingsite:account-filter-firm`, type: `${P}tradingsite:account-filter-type`,
+    dayStarted: `${P}tradingsite:account-day-started-at`};
+  const BT_FORM = {firmName: 'Topstep 50K', accountNumber: '', accountType: 'EVALUATION', startingBalance: '50000', currentBalance: '50000', currentBuffer: '2000', dailyLossLimit: '2000', notes: ''};
+  const BLANK = {firmName: '', accountNumber: '', accountType: 'EVALUATION', startingBalance: '', currentBalance: '', currentBuffer: '', dailyLossLimit: '', notes: ''};
+  const st = {form: {...(BT ? BT_FORM : BLANK)}, plan: PLAN_STD, count: 1, error: null, busy: false,
+    edit: null, editVal: '', sort: 'default', order: [], pnl: {}, checks: {}, firm: 'all', type: 'all', dayStarted: null,
+    undo: [], dragId: null, bk: {bankroll: '', passRate: '', enabled: false}};
+
+  /* ---- load per-browser preferences (same keys the site used) ---- */
+  st.sort = LS.raw(K.sort) || 'default';
+  try { const o = JSON.parse(LS.raw(K.order) || 'null'); if (Array.isArray(o) && o.every(x => typeof x === 'string')) st.order = o; } catch {}
+  try { const o = JSON.parse(LS.raw(K.pnl) || 'null'); if (o && typeof o === 'object' && !Array.isArray(o)) for (const [a, v] of Object.entries(o)) if (typeof v === 'string') st.pnl[a] = v; } catch {}
+  try { const o = JSON.parse(LS.raw(K.checks) || 'null'); if (o && typeof o === 'object' && !Array.isArray(o)) for (const [a, v] of Object.entries(o)) if (typeof v === 'boolean') st.checks[a] = v; } catch {}
+  st.firm = LS.raw(K.firm) || 'all';
+  { const r = LS.raw(K.type); if (['all', 'EVALUATION', 'FUNDED', 'OTHER'].includes(r)) st.type = r; }
+  { const i = Number(LS.raw(K.dayStarted)); if (i > 0 && sameDay(new Date(i), new Date())) st.dayStarted = i; else LS.del(K.dayStarted); }
+  const savePrefs = () => {
+    LS.setRaw(K.sort, st.sort); if (st.order.length > 0) LS.setRaw(K.order, JSON.stringify(st.order));
+    LS.setRaw(K.pnl, JSON.stringify(st.pnl)); LS.setRaw(K.checks, JSON.stringify(st.checks));
+    LS.setRaw(K.firm, st.firm); LS.setRaw(K.type, st.type);
+  };
+  const list = () => S[docKey].items;
+  const find = id => list().find(a => a.id === id);
+  const persist = () => save(docKey);
+  const loadBankroll = () => { const b = S.bankroll; st.bk = {bankroll: b.bankroll == null ? '' : String(b.bankroll), passRate: b.passRate == null ? '' : String(b.passRate), enabled: !!b.enabled}; };
+  const bkArgs = () => ({bankroll: parseBk(st.bk.bankroll, 1e7), passRate: parseBk(st.bk.passRate, 100), enabled: st.bk.enabled});
+  const saveBankroll = () => { const a = bkArgs(); S.bankroll = {bankroll: a.bankroll, passRate: a.passRate, enabled: a.enabled}; save('bankroll'); };
+  if (!BT) loadBankroll();
+
+  /* ---- today's P&L bookkeeping ---- */
+  const todayPnl = a => (a.pnlDay === dayKey(new Date()) && a.todayPnl != null && (st.dayStarted == null || (a.pnlAt ?? 0) > st.dayStarted)) ? a.todayPnl : null;
+  function tradedToday(e){
+    if (st.dayStarted != null) { const t = e.lastBalanceChangeAt ? Date.parse(e.lastBalanceChangeAt) : NaN; return Number.isFinite(t) && t > st.dayStarted; }
+    if (todayPnl(e) != null) return true;
+    if (!e.lastBalanceChangeAt) return false;
+    const t = new Date(e.lastBalanceChangeAt); return !Number.isNaN(t.getTime()) && sameDay(t, new Date());
+  }
+  function pnlView(e){
+    if (st.pnl[e.id] !== undefined) return {value: st.pnl[e.id], pnl: parsePnl(st.pnl[e.id]), recorded: false};
+    const t = todayPnl(e);
+    return t == null ? {value: '', pnl: null, recorded: false} : {value: t.toFixed(2).replace(/\.00$/, ''), pnl: t, recorded: true};
+  }
+
+  /* ---- derived lists ---- */
+  function derive(){
+    const all = list().map(a => ({...a, risk: computeRisk(a)}));
+    const sorted = sortAccounts(all, st.sort, st.order);
+    const filtered = sorted.filter(e => {
+      const t = (e.accountType ?? 'EVALUATION').toUpperCase(), tt = t === 'FUNDED' ? 'FUNDED' : t === 'OTHER' ? 'OTHER' : 'EVALUATION';
+      return (st.type === 'all' || tt === st.type) && (st.firm === 'all' || firmKey(e.firmName) === st.firm);
+    });
+    return {all, sorted, visible: BT ? filtered : applyBankroll(filtered, bkArgs())};
+  }
+  function firmChoices(){
+    const m = new Map();
+    for (const a of list()) { const k = firmKey(a.firmName); if (!m.has(k)) m.set(k, k === UNASSIGNED ? 'Unassigned' : (a.firmName ?? '').trim()); }
+    return [...m.entries()].map(([value, label]) => ({value, label})).sort((a, b) => a.label.localeCompare(b.label));
+  }
+  function currentOrder(order){
+    if (st.sort === 'manual' && order.length > 0) {
+      const ids = list().map(e => e.id), set = new Set(ids);
+      return [...order.filter(e => set.has(e)), ...ids.filter(e => !order.includes(e))];
+    }
+    return sortAccounts(list(), st.sort, st.order).map(e => e.id);
+  }
+  function syncManualOrder(){
+    if (st.sort !== 'manual') return;
+    const ids = list().map(e => e.id), add = ids.filter(e => !st.order.includes(e)), keep = st.order.filter(e => ids.includes(e));
+    if (add.length > 0) st.order = [...keep, ...add]; else if (keep.length !== st.order.length) st.order = keep;
+  }
+
+  /* ---- mutations ---- */
+  function update(id, patch){
+    const a = find(id); if (!a) return;
+    Object.assign(a, patch, {updatedAt: new Date().toISOString()}); persist();
+  }
+  function pushUndo(e){ st.undo = [...st.undo, {...e, at: Date.now()}].slice(-20); }
+  async function logOrToggle(id){
+    const typed = (st.pnl[id] ?? '').trim(), n = find(id);
+    if (!n) return;
+    if (typed === '') {
+      const cur = st.checks[id] ?? tradedToday(n);
+      st.checks[id] = !cur; savePrefs(); renderRoster(); return;
+    }
+    const l = Number(typed);
+    if (!Number.isFinite(l)) { toast("Today's P&L must be a number."); return; }
+    const r = n.currentBalance, s = n.currentBuffer, prevInput = st.pnl[id] ?? null, c = r + l;
+    const u = trailBuffer({firmName: n.firmName, startingBalance: n.startingBalance, previousBalance: r, previousBuffer: n.currentBuffer, newBalance: c});
+    const now = new Date(), key = dayKey(now), prevPnl = {pnlDay: n.pnlDay ?? null, todayPnl: n.todayPnl ?? null, pnlAt: n.pnlAt ?? null}, prevChange = n.lastBalanceChangeAt ?? null;
+    const base = todayPnl(n);
+    update(id, {currentBalance: c, currentBuffer: u, lastBalanceChangeAt: now.toISOString(), pnlDay: key, todayPnl: Math.round(((base ?? 0) + l) * 100) / 100, pnlAt: now.getTime()});
+    st.checks[id] = true; delete st.pnl[id];
+    pushUndo({accountId: id, accountLabel: n.firmName ?? n.label ?? 'account', previousBalance: r, previousBuffer: s, previousPnlInput: prevInput, prevPnl, prevChange, source: 'daily-pnl'});
+    savePrefs(); renderRoster();
+  }
+  async function undoLast(){
+    const t = st.undo[st.undo.length - 1]; if (!t) return;
+    const a = find(t.accountId);
+    if (!a) { st.undo = st.undo.slice(0, -1); renderRoster(); return; }
+    const patch = {currentBalance: t.previousBalance, currentBuffer: t.previousBuffer !== undefined ? t.previousBuffer : a.currentBuffer, lastBalanceChangeAt: t.prevChange};
+    if (t.prevPnl) Object.assign(patch, t.prevPnl);
+    update(t.accountId, patch);
+    st.undo = st.undo.slice(0, -1);
+    if (t.source === 'daily-pnl') {
+      if (t.previousPnlInput == null) delete st.pnl[t.accountId]; else st.pnl[t.accountId] = t.previousPnlInput;
+      st.checks[t.accountId] = false;
+    }
+    savePrefs(); renderRoster();
+  }
+  function startEdit(id, field){ const a = find(id); if (!a) return; st.edit = {id, field}; const v = a[field]; st.editVal = v == null ? '' : String(v); renderRoster(); }
+  function cancelEdit(){ st.edit = null; st.editVal = ''; renderRoster(); }
+  function commitEdit(){
+    if (!st.edit) return;
+    const {id, field} = st.edit, t = find(id), val = st.editVal;
+    st.edit = null; st.editVal = '';
+    if (!t) { renderRoster(); return; }
+    const patch = {};
+    if (field === 'notes' || field === 'firmName' || field === 'accountNumber') patch[field] = val.trim() || null;
+    else {
+      const a = Number(val);
+      if (val.trim() === '' || isNaN(a)) { toast('Invalid number'); renderRoster(); return; }
+      if (field === 'currentBalance') {
+        patch.currentBalance = a;
+        if (a !== t.currentBalance) {
+          patch.currentBuffer = trailBuffer({firmName: t.firmName, startingBalance: t.startingBalance, previousBalance: t.currentBalance, previousBuffer: t.currentBuffer, newBalance: a});
+          patch.lastBalanceChangeAt = new Date().toISOString();
+          pushUndo({accountId: id, accountLabel: t.firmName ?? t.label ?? 'account', previousBalance: t.currentBalance, previousBuffer: t.currentBuffer, previousPnlInput: null, prevChange: t.lastBalanceChangeAt ?? null, source: 'inline-edit'});
+        }
+      } else patch[field] = a;
+    }
+    update(id, patch); renderRoster();
+  }
+  async function toggleType(e){
+    const t = (e.accountType ?? 'EVALUATION').toUpperCase();
+    update(e.id, {accountType: t === 'FUNDED' ? 'EVALUATION' : 'FUNDED'}); renderRoster();
+  }
+  async function remove(id){
+    if (!await confirmBox('Remove this trading account?', 'Remove')) return;
+    S[docKey].items = list().filter(a => a.id !== id); persist(); renderRoster();
+  }
+  async function activate(e){
+    const t = btInfo(e.notes), a = btSlot(e);
+    if (!btPassed(e)) { toast(`Account must reach $${passAt(e.firmName).toLocaleString()} before activation.`); return; }
+    const fn = isFN(e.firmName);
+    if (fn && !await confirmBox(`Convert Eval #${a} to Funded #${a}? ($70 eval, no activation fee.)`)) return;
+    if (!fn && t.plan === PLAN_STD && !await confirmBox(`Activate Funded #${a} for $149?`, 'Activate')) return;
+    if (!fn && t.plan === '95' && !await confirmBox(`Convert Eval #${a} to Funded #${a}? (No activation fee on the $95 plan.)`)) return;
+    update(e.id, {label: btLabel('FUNDED', a), firmName: e.firmName ?? 'Topstep 50K', accountType: 'FUNDED', startingBalance: 5e4, currentBalance: 5e4,
+      currentBuffer: 2e3, dailyLossLimit: btDll(e.firmName), notes: btNotes(t.plan, true, a)});
+    renderRoster();
+  }
+  function buildAccount(slotOffset = 0){
+    const f = st.form, maxSlot = list().reduce((m, a) => { const i = btInfo(a.notes); if (!i.isBacktest) return m; const n = i.slot ?? slotFromLabel(a.label) ?? 0; return n > m ? n : m; }, 0);
+    const n = maxSlot + 1 + slotOffset, firm = BT ? (f.firmName.trim() || 'Topstep 50K') : (f.firmName.trim() || null), now = new Date().toISOString();
+    return {id: newId(), label: BT ? btLabel('EVALUATION', n) : null, firmName: firm, accountNumber: f.accountNumber.trim() || null,
+      accountType: BT ? 'EVALUATION' : f.accountType, startingBalance: BT ? 5e4 : Number(f.startingBalance || '0'),
+      currentBalance: Number(f.currentBalance || '0'), currentBuffer: f.currentBuffer !== '' ? Number(f.currentBuffer) : 0,
+      dailyLossLimit: BT ? btDll(firm) : (f.dailyLossLimit !== '' ? Number(f.dailyLossLimit) : 0),
+      notes: BT ? btNotes(st.plan, false, n) : (f.notes.trim() || null), createdAt: now, updatedAt: now, lastBalanceChangeAt: null, lastPayoutDate: null};
+  }
+  function submit(){
+    const count = Math.min(50, Math.max(1, st.count));
+    const made = [];
+    for (let i = 0; i < count; i++) made.push(BT ? buildAccount(i) : buildAccount());
+    S[docKey].items = [...list(), ...made]; persist();
+    st.form = {...(BT ? BT_FORM : BLANK)}; st.count = 1; st.error = null;
+    renderForm(); renderRoster();
+  }
+  async function newDay(){
+    if (Object.values(st.pnl).some(e => (e ?? '').trim() !== '') && !await confirmBox("Clear today's P&L entries for every account and start a new trading day?", 'Start new day')) return;
+    const e = Date.now(); st.pnl = {}; st.checks = {}; st.dayStarted = e;
+    LS.del(K.pnl); LS.del(K.checks); LS.setRaw(K.dayStarted, String(e)); renderRoster();
+  }
+
+  /* ============================ rendering ============================ */
+  root.innerHTML = `<div class="stack">
+    ${BT ? '' : `<div class="banner"><strong>Discount codes:</strong> use code <strong>JJ</strong> at checkout on every prop firm for the best discount — except Alpha firms, where the code is <strong>JJSIMON</strong>.</div>`}
+    <div class="page-head"><div>
+      <h1>${BT ? 'Backtesting' : 'Trading accounts'}</h1>
+      <p>${BT ? 'Practice the full dashboard workflow with fake evals. Pick Topstep 50K or FundedNext 50K Flex, add Eval #1, Eval #2, … track costs, log daily P&amp;L, and activate passed accounts as Funded #1, Funded #2, …'
+        : 'Log each evaluation or funded account below. The stop loss and profit target values shown are recommendations for your next trade.'}</p>
+      ${BT ? `<p>Topstep 50K: pass at <strong>$53,000</strong>. Standard plan <strong>$49 + $149 activation</strong>, or flat <strong>$95</strong> with no activation. FundedNext 50K Flex: pass at <strong>$52,500</strong>, <strong>$70</strong> eval, no activation. Risk matches the live dashboard.</p>
+        <p>Topstep consistency rule: on a funded account, no single day's profit can exceed 50% of your total profits when requesting a payout. Spread gains across days instead of one huge winner.</p>`
+        : `<p>Note: Stop loss and take profit values are recommended for your next trade based on your account type and current balance.</p>`}
+    </div></div>
+    ${BT ? '<div class="card" data-slot="tracker"></div>' : ''}
+    <div class="card" data-slot="form"></div>
+    <div class="card">
+      <div class="roster-head">
+        <div><h3>Account roster</h3><p>${BT ? "Type today's P&amp;L and click Log (or press Enter) — balance updates and the row marks as traded."
+          : 'Change the balance and distance to max loss as your account balance changes, and then follow the auto-generated optimal risk and take profit'}</p></div>
+        ${BT ? '' : '<div class="bankroll" data-slot="bankroll"></div>'}
+      </div>
+      <div class="toolbar" data-slot="toolbar"></div>
+      <div class="table-wrap"><table><thead data-slot="thead"></thead><tbody data-slot="tbody"></tbody></table></div>
+      <div class="foot">
+        <p>* Stop loss and profit target are recommendations for your next trade</p>
+        <p>* Points are shown as <code>SL / TP</code> for NQ, using $20 per point per contract</p>
+        <p>* You should take a payout the instant you are eligible</p>
+        <p>* Click on the numbers to edit them; click the account name to rename it; click the account # to change it; click Type to switch Evaluation / Funded; drag the ⠿ handle (or use ↑↓) to reorder rows — that switches to manual sort. Filter by firm or type above the table.</p>
+        <p>* Always take only 1 trade per day per account</p>
+        <p>* Type today's P&amp;L (use a negative number for a loss)${BT ? ', then click Log or press Enter' : ' in the second column, then click the check on the far left'} to update the balance and mark the account as traded today.${BT ? '' : ' Click the check by itself (with the P&amp;L blank) to toggle the traded state without changing the balance.'} Use Undo last entry to revert a mistake.</p>
+        <p>* Row turns green when today's P&amp;L is positive and red when it is a loss; rows are neutral when no P&amp;L is entered or after Start new trading day. The small green dot and the filled check mean the balance was updated today.</p>
+      </div>
+    </div>
+    ${BT ? '' : `<div class="card"><h2>Optimal Approach</h2><p class="muted" style="margin:6px 0 14px">How to run each firm. The stop and target on the account rows follow this.</p>
+      <details class="approach"><summary>BluSky Launch 50K</summary><ul>
+        <li>Run at most 3 accounts at a time.</li>
+        <li>Eval: risk $2,000 to make $1,520 — twice.</li>
+        <li>Funded, stage 1 (“the climb”): risk $2,000 to make $1,000 until the account is up $3,000. If it is lost here, reset for $250.</li>
+        <li>Funded, stage 2 (weekly): risk $1,000 to make $2,500, then $3,500, then $4,500, taking the $2,500 weekly payout cap each time.</li>
+        <li>Near $9,900 of profit, park the account and bring two more up to the same point.</li></ul></details>
+      <details class="approach"><summary>Take Profit Trader 50K</summary><ul>
+        <li>Only buy the eval at 40% off or more.</li>
+        <li>Eval: risk $2,000 to make $1,520 — twice. Then take three tiny 1-MNQ trades on three separate days to meet the minimum days.</li>
+        <li>Funded, day 1: risk the whole account to make $3,000, then take $1,000 out.</li>
+        <li>After that: risk $1,000 to make $1,000; then risk the remaining $1,000 to make $2,000. Each win pays out $1,000.</li></ul></details>
+    </div>`}
+  </div>`;
+  const slot = n => $(`[data-slot="${n}"]`, root);
+
+  function renderForm(){
+    const f = st.form, busy = st.busy;
+    const label = BT ? (st.count > 1 ? `Add ${st.count} ${f.firmName || 'Topstep 50K'} evals` : `Add ${f.firmName || 'Topstep 50K'} eval`) : (st.count > 1 ? `Add ${st.count} accounts` : 'Add account');
+    const inp = (name, lbl, extra = '') => `<label class="f"><span>${lbl}</span><input name="${name}" value="${esc(f[name])}" ${extra}></label>`;
+    slot('form').innerHTML = `<form class="acct-form" novalidate>
+      <div class="grid">
+        ${BT ? `<label class="f"><span>Firm</span><select name="firmName">${BT_FIRMS.map(([v, l]) => `<option value="${esc(v)}" ${f.firmName === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+          ${isFN(f.firmName) ? `<label class="f"><span>Eval pricing</span><input readonly value="${esc(btPricing(f.firmName, PLAN_STD))}"></label>`
+            : `<label class="f"><span>Eval pricing plan</span><select name="plan"><option value="${PLAN_STD}" ${st.plan === PLAN_STD ? 'selected' : ''}>${planLabel(PLAN_STD)}</option><option value="95" ${st.plan === '95' ? 'selected' : ''}>${planLabel('95')}</option></select></label>`}
+          <label class="f"><span>Type</span><input readonly value="Evaluation"></label>`
+        : `<label class="f"><span>Account type</span><select name="firmName"><option value="">Select account type</option>${FIRM_OPTIONS.map(([v, l]) => `<option value="${esc(v)}" ${f.firmName === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`}
+        ${inp('accountNumber', 'Account number', 'placeholder="Paste account identifier"')}
+        ${BT ? '' : `<label class="f"><span>Type</span><select name="accountType">${[['EVALUATION', 'Evaluation'], ['FUNDED', 'Funded'], ['OTHER', 'Other']].map(([v, l]) => `<option value="${v}" ${f.accountType === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`}
+        ${inp('startingBalance', 'Account size (USD)', `type="number" min="0" step="any" required ${BT ? 'readonly' : ''}`)}
+        ${inp('currentBalance', 'Current balance (USD)', 'type="number" min="0" step="any" required')}
+        ${inp('currentBuffer', 'Distance to max loss', 'type="number" step="any" placeholder="Use negative number if underwater"')}
+        ${inp('dailyLossLimit', 'Daily loss limit (optional)', 'type="number" min="0" step="any" placeholder="Overrides preset risk"')}
+      </div>
+      ${BT ? '' : `<label class="f"><span>Notes</span><textarea name="notes" rows="2" maxlength="500" placeholder="Optional context about drawdown or restrictions.">${esc(f.notes)}</textarea></label>`}
+      ${st.error ? `<p class="err">${esc(st.error)}</p>` : ''}
+      <div class="count"><span>How many to add</span>
+        <div class="seg">${[1, 5, 10].map(n => `<button type="button" class="btn ${st.count === n ? 'on' : ''}" data-count="${n}">${n}</button>`).join('')}</div>
+        <label class="f"><span>Custom</span><input name="count" type="number" min="1" max="50" value="${st.count}"></label>
+      </div>
+      <div><button type="submit" class="btn primary" ${busy ? 'disabled' : ''}>${busy ? 'Saving…' : esc(label)}</button></div>
+    </form>`;
+  }
+  slot('form').addEventListener('input', e => {
+    const t = e.target, n = t.name; if (!n) return;
+    if (n === 'count') { st.count = Math.min(50, Math.max(1, Math.floor(Number(t.value)) || 1)); updateCountUi(); return; }
+    if (n === 'plan') { st.plan = t.value; return; }
+    if (n in st.form && t.tagName !== 'SELECT') st.form[n] = t.value;
+  });
+  slot('form').addEventListener('change', e => {
+    const t = e.target, n = t.name;
+    if (n === 'plan') { st.plan = t.value; renderForm(); return; }
+    if (n === 'accountType') { st.form.accountType = t.value; return; }
+    if (n === 'firmName') {
+      const v = t.value;
+      if (BT) { st.form = {...st.form, firmName: v, dailyLossLimit: String(btDll(v))}; }
+      else { const d = TYPE_DEFAULTS[v]; st.form = d ? {...st.form, firmName: v, startingBalance: String(d[0]), currentBalance: String(d[0]), currentBuffer: String(d[1])} : {...st.form, firmName: v}; }
+      renderForm();
+    }
+  });
+  function updateCountUi(){
+    $$('[data-count]', slot('form')).forEach(b => b.classList.toggle('on', Number(b.dataset.count) === st.count));
+    const c = $('input[name=count]', slot('form')); if (c && document.activeElement !== c) c.value = st.count;
+    const f = st.form, btn = $('button[type=submit]', slot('form'));
+    btn.textContent = BT ? (st.count > 1 ? `Add ${st.count} ${f.firmName || 'Topstep 50K'} evals` : `Add ${f.firmName || 'Topstep 50K'} eval`) : (st.count > 1 ? `Add ${st.count} accounts` : 'Add account');
+  }
+  slot('form').addEventListener('click', e => { const b = e.target.closest('[data-count]'); if (b) { st.count = Number(b.dataset.count); updateCountUi(); } });
+  slot('form').addEventListener('submit', e => {
+    e.preventDefault();
+    const form = e.target;
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    submit();
+  });
+
+  function renderBankroll(){
+    if (BT) return;
+    const a = bkArgs();
+    slot('bankroll').innerHTML = `<div class="row">
+      <label class="f"><span>Bankroll ($)</span><input type="number" min="0" step="50" placeholder="3000" name="bankroll" value="${esc(st.bk.bankroll)}"></label>
+      <label class="f"><span>Pass rate (%)</span><input type="number" min="1" max="100" step="1" placeholder="25" name="passRate" value="${esc(st.bk.passRate)}"></label>
+      <button type="button" class="btn ${a.enabled ? 'primary' : ''}" aria-pressed="${a.enabled}" data-act="bk-toggle"
+        title="Assumes a $2,000 drawdown taken in a single session, with the drawdown locking at breakeven once you're up $2,000. Assumes zero drift — real results will run below this.">Bankroll optimized sizing: ${a.enabled ? 'On' : 'Off'}</button>
+    </div><p class="cap" data-slot="bk-cap"></p>`;
+    renderBkCaption();
+  }
+  function renderBkCaption(){
+    if (BT) return;
+    const a = bkArgs();
+    let msg = null;
+    if (a.enabled) {
+      if (a.bankroll == null || a.passRate == null) msg = 'Enter a bankroll and pass rate to use optimized targets.';
+      else { const {target, underfunded, caption} = kelly(a.bankroll, a.passRate); if (target == null || underfunded) msg = caption; }
+    }
+    const el = slot('bk-cap'); if (el) el.textContent = msg ?? (a.enabled ? 'Funded profit targets on 50K and smaller accounts are sized to your bankroll. Larger accounts keep the firm target.' : 'Funded accounts use the firm’s standard profit target.');
+  }
+  if (!BT) {
+    slot('bankroll').addEventListener('input', e => { const n = e.target.name; if (n === 'bankroll' || n === 'passRate') { st.bk[n] = e.target.value; renderBkCaption(); renderRoster(); } });
+    slot('bankroll').addEventListener('focusout', e => { const n = e.target.name; if (n === 'bankroll' || n === 'passRate') saveBankroll(); });
+    slot('bankroll').addEventListener('click', e => { if (e.target.closest('[data-act="bk-toggle"]')) { st.bk.enabled = !st.bk.enabled; saveBankroll(); renderBankroll(); renderRoster(); } });
+  }
+
+  function renderTracker(){
+    if (!BT) return;
+    let t = 0, a = 0, n = 0; const items = list();
+    for (const l of items) {
+      const e = btInfo(l.notes); if (!e.isBacktest) continue;
+      if (isFN(l.firmName)) { t += 70; continue; }
+      t += PLAN_PRICE[e.plan];
+      const r = (l.accountType ?? '').toUpperCase() === 'FUNDED';
+      if (e.plan === PLAN_STD && (e.activated || r)) { a += 149; n += 1; }
+    }
+    const evalCount = items.filter(e => btInfo(e.notes).isBacktest).length;
+    slot('tracker').innerHTML = `<h2>Money tracker</h2>
+      <p class="muted" style="margin:4px 0 14px">Topstep 50K: ${planLabel(PLAN_STD)} or ${planLabel('95')}. FundedNext 50K Flex evals are $70 with no activation fee.</p>
+      <div class="metrics">
+        <div class="metric"><div class="k">Eval accounts</div><div class="v">${evalCount}</div></div>
+        <div class="metric"><div class="k">Eval spend</div><div class="v">$${t.toLocaleString()}</div></div>
+        <div class="metric"><div class="k">Activations ($149)</div><div class="v">${n}</div></div>
+        <div class="metric"><div class="k">Activation spend</div><div class="v">$${a.toLocaleString()}</div></div>
+        <div class="metric accent"><div class="k">Total spent</div><div class="v">$${(t + a).toLocaleString()}</div></div>
+      </div>
+      <p class="note" style="margin-top:12px">Topstep standard: $49 per eval, then $149 when you activate after passing. Topstep flat: $95 upfront with no activation fee. FundedNext Flex: $70 per eval, no activation.</p>`;
+  }
+
+  function renderToolbar(d){
+    const filtered = st.firm !== 'all' || st.type !== 'all', n = list().length;
+    const last = st.undo[st.undo.length - 1];
+    slot('toolbar').innerHTML = `
+      <label class="f"><span>Sort accounts</span><select data-ctl="sort">${[['default', 'Default (date added)'], ['group-type', 'Group by type (Funded first)'], ['group-firm', 'Group by firm'], ['group-firm-type', 'Group by firm, then type'], ['manual', 'Manual (drag or use ↑ ↓)']].map(([v, l]) => `<option value="${v}" ${st.sort === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="f"><span>Firm</span><select data-ctl="firm"><option value="all">All firms</option>${firmChoices().map(o => `<option value="${esc(o.value)}" ${st.firm === o.value ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select></label>
+      <label class="f"><span>Type</span><select data-ctl="type">${[['all', 'All types'], ['FUNDED', 'Funded'], ['EVALUATION', 'Evaluation'], ['OTHER', 'Other']].map(([v, l]) => `<option value="${v}" ${st.type === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      ${filtered ? '<button type="button" class="btn" data-act="clear-filters">Clear filters</button>' : ''}
+      ${st.sort === 'manual' ? '<button type="button" class="btn" data-act="reset-order">Reset manual order</button>' : ''}
+      <button type="button" class="btn" data-act="new-day" title="Clear every account's typed P&amp;L so you can log a new trading day">Start new trading day</button>
+      <button type="button" class="btn" data-act="undo" ${last ? '' : 'disabled'} title="${last ? esc(`Undo last balance change for ${last.accountLabel ?? 'last account'}`) : 'Nothing to undo yet'}">Undo last entry${st.undo.length > 1 ? ` (${st.undo.length})` : ''}</button>
+      <span class="legend"><span class="dot"></span>traded today${n > 0 ? ` · ${filtered ? `${d.visible.length} of ${n} account${n === 1 ? '' : 's'}` : `${n} account${n === 1 ? '' : 's'}`}` : ''}</span>`;
+  }
+
+  function editable(e, field, display, cls = ''){
+    if (st.edit?.id === e.id && st.edit?.field === field) {
+      const num = field === 'currentBalance' || field === 'currentBuffer';
+      return `<input class="cell" data-editor ${num ? 'type="number" step="any"' : 'type="text"'} ${field === 'notes' ? 'maxlength="500"' : ''} value="${esc(st.editVal)}">`;
+    }
+    return `<span class="click ${cls}" role="button" tabindex="0" data-edit="${field}" title="${field === 'firmName' ? 'Click to rename this account' : field === 'accountNumber' ? 'Click to edit the account number' : ''}">${display}</span>`;
+  }
+  function reorderCell(e, idx, total){
+    return `<span class="handle" draggable="true" data-drag="${esc(e.id)}" title="Drag to reorder">⠿</span>
+      <span class="arrows"><button type="button" data-move="-1" ${idx === 0 ? 'disabled' : ''} aria-label="Move up">↑</button><button type="button" data-move="1" ${idx === total - 1 ? 'disabled' : ''} aria-label="Move down">↓</button></span>`;
+  }
+  function numCell(e, field){
+    const on = st.edit?.id === e.id && st.edit?.field === field;
+    return `<td class="num ${on ? '' : 'click'}" ${on ? '' : `data-edit="${field}" role="button" tabindex="0"`}>${on ? editable(e, field, '') : money(e[field])}</td>`;
+  }
+  function rowHtml(e, idx, total){
+    const r = pnlView(e), o = st.checks[e.id] ?? tradedToday(e), info = BT ? btInfo(e.notes) : null, passed = BT && btPassed(e),
+      funded = (e.accountType ?? '').toUpperCase() === 'FUNDED', cls = r.pnl > 0 ? 'pos' : r.pnl < 0 ? 'neg' : '';
+    const pnlInput = `<input class="pnl" type="text" inputmode="decimal" data-pnl placeholder="${BT ? 'e.g. 420' : '+/-'}" value="${esc(r.value)}" ${r.recorded ? `title="${esc(RECORDED_TIP)}" data-recorded="1"` : ''}>`;
+    const dot = o ? '<span class="dot" title="Balance updated today"></span>' : '';
+    const typeLabel = (() => { const l = (e.accountType ?? 'EVALUATION').toUpperCase(); return l === 'FUNDED' ? 'Funded' : l === 'OTHER' ? 'Other' : 'Evaluation'; })();
+    let risk;
+    if (!e.risk) risk = `<td colspan="4" class="faint">No preset for this account type</td>`;
+    else if (e.risk.textPlan) risk = `<td colspan="4" class="plan">${esc(e.risk.textPlan)}</td>`;
+    else risk = `<td class="num">${money(e.risk.stopLoss)}</td><td class="num">${money(e.risk.takeProfit)}</td><td class="num">${contracts(e)}</td><td class="num">${points(e)}</td>`;
+    return `<tr data-id="${esc(e.id)}" class="${cls}">
+      ${BT ? `<td><div class="cellflex">${pnlInput}<button type="button" class="btn sm" data-act="log" ${(st.pnl[e.id] ?? '').trim() === '' ? 'disabled' : ''}>Log</button>${dot}</div></td>`
+        : `<td><button type="button" class="tick ${o ? 'on' : ''}" data-act="tick" aria-label="${o ? 'Mark account as not traded today' : "Log today's trade"}"
+            title="${(st.pnl[e.id] ?? '').trim() !== '' ? "Submit today's P&amp;L and mark as traded" : o ? 'Click to uncheck (mark as not traded today)' : "Click to mark as traded today, or type today's P&amp;L on the right first"}">${o ? '✓' : ''}</button></td>
+          <td>${pnlInput}</td>`}
+      ${BT ? `<td><div class="cellflex">${reorderCell(e, idx, total)}<span>${esc(info.isBacktest ? btLabel(e.accountType, info.slot ?? slotFromLabel(e.label) ?? 1) : (e.label ?? '—'))}</span></div></td>`
+        : `<td><div class="cellflex">${editable(e, 'firmName', esc(e.firmName ?? '—'))}${dot}</div></td>
+           <td class="click" data-act="type" title="Click to switch between Evaluation and Funded">${typeLabel}</td>`}
+      ${BT && info ? `<td>${esc(btPricing(e.firmName, info.plan))}</td>` : BT ? '<td></td>' : ''}
+      ${BT ? `<td><div class="status"><span class="pill ${funded ? 'pos' : passed ? 'gold' : ''}">${funded ? 'Funded active' : passed ? 'Passed eval' : 'Eval active'}</span>
+          ${passed && !funded ? `<button type="button" class="btn sm primary" data-act="activate">${isFN(e.firmName) ? 'Activate (no fee)' : info?.plan === PLAN_STD ? 'Activate $149' : 'Activate (included)'}</button>` : ''}</div></td>` : ''}
+      ${BT ? '' : `<td><div class="cellflex">${reorderCell(e, idx, total)}${editable(e, 'accountNumber', esc(e.accountNumber ?? '—'), 'mono')}</div></td>`}
+      ${numCell(e, 'currentBalance')}${numCell(e, 'currentBuffer')}
+      ${risk}
+      ${BT ? '' : (st.edit?.id === e.id && st.edit?.field === 'notes' ? `<td>${editable(e, 'notes', '')}</td>` : `<td class="click notes" data-edit="notes" role="button" tabindex="0" title="${esc(e.notes ?? '')}">${esc(e.notes ?? '—')}</td>`)}
+      <td class="faint">${e.updatedAt ? esc(new Date(e.updatedAt).toLocaleString()) : ''}</td>
+      <td><button type="button" class="btn sm danger" data-act="delete">Delete</button></td>
+    </tr>`;
+  }
+  function renderRoster(){
+    syncManualOrder(); savePrefs();
+    const d = derive();
+    renderToolbar(d); renderTracker();
+    slot('thead').innerHTML = `<tr>${BT ? `<th title="Enter today's P&amp;L and click Log to update the balance">Today's P&amp;L</th>` : `<th title="Click after entering today's P&amp;L to log the trade and update the balance">Traded?</th><th>Today's P&amp;L</th>`}
+      <th>${BT ? 'Account' : 'Firm'}</th>${BT ? '<th>Plan</th><th>Status</th>' : '<th>Type</th><th>Account #</th>'}
+      <th>Balance</th><th>Distance to max loss</th><th>Stop loss*</th><th>Profit target*</th><th>NQ Contracts*</th><th>Points*</th>${BT ? '' : '<th>Notes</th>'}<th>Updated</th><th>Actions</th></tr>`;
+    const cols = BT ? 12 : 14;
+    slot('tbody').innerHTML = d.visible.length ? d.visible.map((e, i) => rowHtml(e, i, d.visible.length)).join('')
+      : `<tr><td class="empty" colspan="${cols}">${list().length === 0 ? (BT ? 'No backtest accounts yet. Add one or pick a count above to batch-create.' : 'No accounts recorded yet.') : 'No accounts match these filters.'}</td></tr>`;
+    const ed = $('[data-editor]', slot('tbody'));
+    if (ed) { ed.focus(); if (ed.select) ed.select(); }
+    root._visible = d.visible.map(e => e.id);
+  }
+
+  /* ---- roster events ---- */
+  slot('toolbar').addEventListener('change', e => {
+    const c = e.target.dataset.ctl; if (!c) return;
+    st[c] = e.target.value; savePrefs(); renderRoster();
+  });
+  slot('toolbar').addEventListener('click', e => {
+    const a = e.target.closest('[data-act]')?.dataset.act;
+    if (a === 'clear-filters') { st.firm = 'all'; st.type = 'all'; savePrefs(); renderRoster(); }
+    else if (a === 'reset-order') { st.order = list().map(e => e.id); savePrefs(); renderRoster(); }
+    else if (a === 'new-day') newDay();
+    else if (a === 'undo') undoLast();
+  });
+  const tbody = slot('tbody');
+  const rowId = el => el.closest('tr[data-id]')?.dataset.id;
+  tbody.addEventListener('click', e => {
+    const id = rowId(e.target); if (!id) return;
+    const act = e.target.closest('[data-act]')?.dataset.act, mv = e.target.closest('[data-move]'), ed = e.target.closest('[data-edit]');
+    if (e.target.closest('[data-editor]')) return;
+    if (mv) { move(id, Number(mv.dataset.move)); return; }
+    if (act === 'tick' || act === 'log') { logOrToggle(id); return; }
+    if (act === 'type') { const a = find(id); if (a) toggleType(a); return; }
+    if (act === 'delete') { remove(id); return; }
+    if (act === 'activate') { const a = find(id); if (a) activate(a); return; }
+    if (ed) startEdit(id, ed.dataset.edit);
+  });
+  tbody.addEventListener('keydown', e => {
+    const t = e.target;
+    if (t.matches('[data-editor]')) {
+      if (e.key === 'Enter') { e.preventDefault(); commitEdit(); } else if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+      return;
+    }
+    if (t.matches('[data-pnl]') && e.key === 'Enter') { e.preventDefault(); logOrToggle(rowId(t)); return; }
+    if (t.matches('[data-edit]') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); startEdit(rowId(t), t.dataset.edit); }
+  });
+  tbody.addEventListener('input', e => {
+    const t = e.target, id = rowId(t);
+    if (t.matches('[data-editor]')) { st.editVal = t.value; return; }
+    if (t.matches('[data-pnl]')) {
+      st.pnl[id] = t.value; LS.setRaw(K.pnl, JSON.stringify(st.pnl));
+      const tr = t.closest('tr'), p = parsePnl(t.value);
+      tr.classList.toggle('pos', p > 0); tr.classList.toggle('neg', p < 0);
+      const log = $('[data-act="log"]', tr); if (log) log.disabled = t.value.trim() === '';
+      const tick = $('[data-act="tick"]', tr); if (tick) tick.title = t.value.trim() !== '' ? "Submit today's P&L and mark as traded" : tick.classList.contains('on') ? 'Click to uncheck (mark as not traded today)' : "Click to mark as traded today, or type today's P&L on the right first";
+    }
+  });
+  tbody.addEventListener('focusin', e => {
+    const t = e.target;
+    if (t.matches('[data-pnl]') && t.dataset.recorded) { st.pnl[rowId(t)] = ''; t.value = ''; delete t.dataset.recorded; t.removeAttribute('title'); }
+  });
+  tbody.addEventListener('focusout', e => {
+    const t = e.target;
+    if (t.matches('[data-editor]')) { if (st.edit) commitEdit(); return; }
+    if (t.matches('[data-pnl]')) {
+      const id = rowId(t);
+      if ((st.pnl[id] ?? '').trim() === '') {
+        delete st.pnl[id]; LS.setRaw(K.pnl, JSON.stringify(st.pnl));
+        const a = find(id), v = a ? pnlView(a) : null;
+        if (v?.recorded) { t.value = v.value; t.dataset.recorded = '1'; t.title = RECORDED_TIP; }
+        const tr = t.closest('tr'); tr.classList.toggle('pos', v?.pnl > 0); tr.classList.toggle('neg', v?.pnl < 0);
+      }
+    }
+  });
+  function move(id, dir){
+    const vis = root._visible || [];
+    st.sort = 'manual';
+    const base = currentOrder(st.order), r = vis.indexOf(id), i = r + dir;
+    st.order = r < 0 || i < 0 || i >= vis.length ? base : moveInOrder(base, vis, id, vis[i]);
+    savePrefs(); renderRoster();
+  }
+  tbody.addEventListener('dragstart', e => {
+    const h = e.target.closest('[data-drag]'); if (!h) return;
+    st.dragId = h.dataset.drag; e.dataTransfer.setData('text/plain', st.dragId); e.dataTransfer.effectAllowed = 'move';
+    h.closest('tr').classList.add('dragging');
+  });
+  tbody.addEventListener('dragover', e => {
+    const tr = e.target.closest('tr[data-id]'); if (!tr || !st.dragId) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+    $$('tr.drop-over', tbody).forEach(x => x !== tr && x.classList.remove('drop-over'));
+    if (tr.dataset.id !== st.dragId) tr.classList.add('drop-over');
+  });
+  tbody.addEventListener('drop', e => {
+    const tr = e.target.closest('tr[data-id]'); if (!tr) return;
+    e.preventDefault();
+    const from = e.dataTransfer.getData('text/plain') || st.dragId, vis = root._visible || [];
+    if (from) { st.sort = 'manual'; st.order = moveInOrder(currentOrder(st.order), vis, from, tr.dataset.id); }
+    st.dragId = null; savePrefs(); renderRoster();
+  });
+  tbody.addEventListener('dragend', () => { st.dragId = null; $$('tr.drop-over,tr.dragging', tbody).forEach(x => x.classList.remove('drop-over', 'dragging')); });
+
+  renderForm(); renderBankroll(); renderRoster();
+  onDoc(docKey, () => { if (!st.edit) renderRoster(); });
+  if (!BT) onDoc('bankroll', () => { const f = document.activeElement; if (f && slot('bankroll').contains(f) && f.tagName === 'INPUT') return; loadBankroll(); renderBankroll(); renderRoster(); });
+  return {refresh: renderRoster};
+}
+
+/* ============================================================
+   Spend — costs, payouts and what a funded account really costs
+   ============================================================ */
+const SIZE_TOKEN = /^\d+k$|^\d+$/;
+const CATS = ['eval_fee', 'reset', 'activation', 'subscription', 'data_feed', 'platform', 'payout_fee', 'other'];
+const CAT_LABEL = {eval_fee: 'Evaluation fee', reset: 'Reset', activation: 'Activation fee', subscription: 'Subscription', data_feed: 'Data feed', platform: 'Platform', payout_fee: 'Payout fee', other: 'Other'};
+const catLabel = e => CAT_LABEL[e] ?? e.replace(/_/g, ' ');
+const r2 = e => Math.round(100 * e) / 100;
+const normFirm = e => e ? e.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(e => e.length > 0 && !SIZE_TOKEN.test(e)).sort().join(' ') : '';
+const UNASSIGNED_FIRM = 'Unassigned';
+const dayMs = e => Date.parse(`${e.slice(0, 10)}T00:00:00.000Z`);
+const daysBetween = (e, t) => Math.round((dayMs(t) - dayMs(e)) / 864e5);
+const qtyOf = e => Number.isFinite(e.quantity) && e.quantity > 0 ? Math.floor(e.quantity) : 1;
+const todayIso = () => new Date().toISOString().slice(0, 10);
+const pct = (e, t = 0) => e == null ? '—' : `${(100 * e).toFixed(t)}%`;
+const monthLabel = e => { const [t, a] = e.split('-'); return `${new Date(Date.UTC(Number(t), Number(a) - 1, 1)).toLocaleString('en-US', {month: 'short', timeZone: 'UTC'})} ${t.slice(2)}`; };
+
+function passRateInfo(e){
+  const t = Math.max(0, Math.trunc(e.passed || 0)), a = Math.max(0, Math.trunc(e.failed || 0)), s = t + a, n = Math.max(0, Math.max(0, Math.trunc(e.evalsBought ?? 0)) - s);
+  return s < 10 ? {rate: null, passed: t, failed: a, decidedCount: s, undecidedCount: n,
+    insufficientData: s === 0 ? (n > 0 ? `no eval has been decided yet — ${n} still open, so there is no pass rate to give` : 'no evals have been decided yet, so there is no pass rate to give') : `only ${s} decided eval${s === 1 ? '' : 's'}, 10 needed before a pass rate means anything`}
+    : {rate: Math.round(t / s * 100) / 100, passed: t, failed: a, decidedCount: s, undecidedCount: n, insufficientData: null};
+}
+const rateFields = e => ({passRate: e.rate, decidedEvals: e.decidedCount, undecidedEvals: e.undecidedCount, passRateNote: e.insufficientData});
+function applyFirmOverride(e, t){
+  const a = Math.max(0, Math.floor(t.passed)), s = Math.max(0, Math.floor(t.failed));
+  const r = Math.max((t.evals != null && Number.isFinite(t.evals) ? Math.max(0, Math.floor(t.evals)) : null) ?? e.evals, a + s);
+  return {...e, passed: a, failed: s, evals: r, ...rateFields(passRateInfo({passed: a, failed: s, evalsBought: r})),
+    costPerEval: e.spent > 0 && r > 0 ? r2(e.spent / r) : e.costPerEval, costPerPass: a > 0 ? r2(e.spent / a) : null};
+}
+function baseAnalytics(entries, outcomes, today){
+  const s = entries.reduce((e, t) => e + t.amount, 0), r = outcomes.reduce((e, t) => e + t.paidOut, 0);
+  let l = 0, i = 0, c = null;
+  for (const t of entries) { if (t.category === 'eval_fee') l += qtyOf(t); if (t.category === 'reset') i += qtyOf(t); if (!c || t.date < c) c = t.date; }
+  const map = new Map(), mk = e => ({firm: e, spent: 0, evals: 0, resets: 0, passed: 0, failed: 0, active: 0, paidOut: 0});
+  for (const t of entries) { const k = normFirm(t.firm), row = map.get(k) ?? mk(t.firm?.trim() || UNASSIGNED_FIRM); row.spent += t.amount; if (t.category === 'eval_fee') row.evals += qtyOf(t); if (t.category === 'reset') row.resets += qtyOf(t); map.set(k, row); }
+  for (const t of outcomes) { const k = normFirm(t.firm), row = map.get(k) ?? mk(t.firm?.trim() || UNASSIGNED_FIRM); row.passed += t.passed; row.failed += t.failed; row.active += t.active; row.paidOut += t.paidOut; map.set(k, row); }
+  const byFirm = [...map.values()].map(e => {
+    const t = Math.max(e.evals, e.passed + e.failed + e.active), a = passRateInfo({passed: e.passed, failed: e.failed, evalsBought: t});
+    return {firm: e.firm, spent: r2(e.spent), paidOut: r2(e.paidOut), net: r2(e.paidOut - e.spent), evals: t, resets: e.resets, passed: e.passed, failed: e.failed, active: e.active,
+      passRate: a.rate, decidedEvals: a.decidedCount, undecidedEvals: a.undecidedCount, passRateNote: a.insufficientData,
+      costPerEval: e.evals > 0 ? r2(e.spent / e.evals) : null, costPerPass: e.passed > 0 ? r2(e.spent / e.passed) : null};
+  }).sort((a, b) => b.spent - a.spent);
+  const f = byFirm.reduce((e, t) => e + t.passed, 0), y = byFirm.reduce((e, t) => e + t.failed, 0), v = Math.max(l, f + y + byFirm.reduce((e, t) => e + t.active, 0));
+  const j = passRateInfo({passed: f, failed: y, evalsBought: v}), g = r - s;
+  const cat = new Map(); for (const t of entries) { const e = cat.get(t.category) ?? {amount: 0, count: 0}; e.amount += t.amount; e.count += 1; cat.set(t.category, e); }
+  const mon = new Map(); for (const t of entries) { const k = t.date.slice(0, 7), e = mon.get(k) ?? {amount: 0, count: 0}; e.amount += t.amount; e.count += 1; mon.set(k, e); }
+  let n30 = 0, p30 = 0; for (const t of entries) { const d = daysBetween(t.date, today); if (!(d < 0)) { if (d < 30) n30 += t.amount; else if (d < 60) p30 += t.amount; } }
+  const span = Math.max((c ? Math.max(daysBetween(c, today) + 1, 1) : 0) / 30.44, 1), avg = s > 0 ? s / span : 0;
+  return {totals: {spent: r2(s), paidOut: r2(r), net: r2(g), entries: entries.length, evals: v, passed: f, failed: y, resets: i},
+    byCategory: [...cat.entries()].map(([e, a]) => ({category: e, amount: r2(a.amount), count: a.count, share: s > 0 ? r2(a.amount / s) : 0})).sort((a, b) => b.amount - a.amount),
+    byFirm, byMonth: [...mon.entries()].map(([e, t]) => ({month: e, amount: r2(t.amount), count: t.count})).sort((a, b) => a.month.localeCompare(b.month)),
+    burn: {last30: r2(n30), prev30: r2(p30), deltaPct: p30 > 0 ? r2((n30 - p30) / p30) : null, monthlyAverage: r2(avg), projectedAnnual: r2(12 * avg)},
+    ...rateFields(j), costPerPass: f > 0 ? r2(s / f) : null, breakEven: g < 0 ? r2(-g) : 0, resetRatio: l > 0 ? r2(i / l) : null, firstDate: c};
+}
+function withFirmOverrides(e, t){
+  if (t.length === 0) return e;
+  const a = new Map(t.map(e => [normFirm(e.firm), e])), s = new Set();
+  const rows = e.byFirm.map(e => { const o = a.get(normFirm(e.firm)); return o ? (s.add(normFirm(e.firm)), applyFirmOverride(e, o)) : e; });
+  for (const o of t) { const k = normFirm(o.firm); if (!k || s.has(k)) continue;
+    rows.push(applyFirmOverride({firm: o.firm.trim() || UNASSIGNED_FIRM, spent: 0, paidOut: 0, net: 0, evals: 0, resets: 0, passed: 0, failed: 0, active: 0, passRate: null, decidedEvals: 0, undecidedEvals: 0,
+      passRateNote: 'no evals have been decided yet, so there is no pass rate to give', costPerEval: null, costPerPass: null}, o)); }
+  const l = rows.reduce((e, t) => e + t.passed, 0), i = rows.reduce((e, t) => e + t.failed, 0), c = Math.max(e.totals.evals, rows.reduce((e, t) => e + t.evals, 0));
+  return {...e, byFirm: rows, totals: {...e.totals, passed: l, failed: i, evals: c}, ...rateFields(passRateInfo({passed: l, failed: i, evalsBought: c})), costPerPass: l > 0 ? r2(e.totals.spent / l) : null};
+}
+function withOverride(e, t){
+  if (!t) return e;
+  const a = Math.max(0, Math.floor(t.evals)), s = Math.max(0, Math.floor(t.passed)), r = Math.max(0, Math.floor(t.failed));
+  return {...e, totals: {...e.totals, evals: a, passed: s, failed: r}, ...rateFields(passRateInfo({passed: s, failed: r, evalsBought: a})), costPerPass: s > 0 ? r2(e.totals.spent / s) : null};
+}
+/* Outcomes counted from the dashboard roster (funded = passed, evaluation = still open) plus logged payouts */
+function spendOutcomes(){
+  const m = new Map(), get = f => { const k = normFirm(f); if (!m.has(k)) m.set(k, {firm: (f ?? '').trim(), passed: 0, failed: 0, active: 0, paidOut: 0}); return m.get(k); };
+  for (const a of S.accounts.items) { const t = (a.accountType ?? '').toUpperCase(); if (t === 'FUNDED') get(a.firmName).passed++; else if (t === 'EVALUATION') get(a.firmName).active++; }
+  for (const p of S.spend.payouts) get(p.firm).paidOut += p.amount;
+  return [...m.values()];
+}
+
+function SpendPage(root){
+  const blankCost = () => ({category: 'eval_fee', firm: '', quantity: '1', amount: '', date: todayIso(), description: ''});
+  const st = {filter: '', cost: blankCost(), editId: null, editCost: null, payout: {firm: '', amount: '', date: todayIso(), note: ''}, err: null, newFirm: '', q: '', z: '', Q: ''};
+  const sp = () => S.spend;
+  function counted(){ const b = baseAnalytics(sp().entries, spendOutcomes(), todayIso()); return {evals: b.totals.evals, passed: b.totals.passed, failed: b.totals.failed}; }
+  function loadTotals(){ const t = sp().override ?? counted(); st.q = String(t.evals); st.z = String(t.passed); st.Q = String(t.failed); }
+  loadTotals();
+  function analytics(){
+    const D = st.filter, ent = D ? sp().entries.filter(e => normFirm(e.firm) === D) : sp().entries;
+    const outs = D ? spendOutcomes().filter(e => normFirm(e.firm) === D) : spendOutcomes();
+    const fo = D ? sp().firmOverrides.filter(e => normFirm(e.firm) === D) : sp().firmOverrides;
+    return {a: withOverride(withFirmOverrides(baseAnalytics(ent, outs, todayIso()), fo), D ? null : sp().override), ent};
+  }
+  function firmTabs(){
+    const t = new Map();
+    for (const e of sp().entries) { const k = normFirm(e.firm); if (k && !t.has(k)) t.set(k, e.firm?.trim() ?? ''); }
+    for (const e of spendOutcomes()) { const k = normFirm(e.firm); if (k && !t.has(k)) t.set(k, e.firm.trim()); }
+    for (const e of sp().firmOverrides) { const k = normFirm(e.firm); if (k && !t.has(k)) t.set(k, e.firm.trim()); }
+    return [...t.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }
+  function knownFirms(){
+    const s = new Set(['Topstep', 'Lucid', 'Tradeify', 'FundedNext', 'MFF', 'FundedSeat', 'Apex', 'Alpha Futures', 'E8', 'Blue Guardian', 'BluSky', 'Take Profit Trader', 'Futures Elite']);
+    for (const e of sp().entries) if (e.firm) s.add(e.firm.trim());
+    for (const e of sp().payouts) if (e.firm) s.add(e.firm.trim());
+    for (const a of S.accounts.items) if (a.firmName) s.add(a.firmName.trim());
+    return [...s].sort((a, b) => a.localeCompare(b));
+  }
+  const metric = (label, value, hint, tone) => `<div class="metric${tone ? ' ' + tone : ''}"><div class="k">${label}</div><div class="v">${value}</div>${hint ? `<div class="h">${hint}</div>` : ''}</div>`;
+  const costFields = (c, pfx) => `<div class="grid">
+    <label class="f"><span>Category</span><select data-${pfx}="category">${CATS.map(e => `<option value="${e}" ${c.category === e ? 'selected' : ''}>${catLabel(e)}</option>`).join('')}</select></label>
+    <label class="f"><span>Firm</span><input list="spend-firms" data-${pfx}="firm" value="${esc(c.firm)}" placeholder="Topstep"></label>
+    <label class="f"><span>Amount (total)</span><input type="number" min="0" step="0.01" data-${pfx}="amount" value="${esc(c.amount)}" placeholder="165"></label>
+    <label class="f"><span>How many</span><input type="number" min="1" step="1" data-${pfx}="quantity" value="${esc(c.quantity)}"></label>
+    <label class="f"><span>Date</span><input type="date" data-${pfx}="date" value="${esc(c.date)}"></label>
+    <label class="f"><span>Note</span><input data-${pfx}="description" value="${esc(c.description)}" placeholder="50K eval, Black Friday code"></label></div>`;
+  function totalsState(){
+    const eN = Math.floor(Number(st.q)), eC = Math.floor(Number(st.z)), eP = Math.floor(Number(st.Q));
+    const ok = [st.q, st.z, st.Q].every(v => String(v).trim() !== '') && Number.isInteger(eN) && Number.isInteger(eC) && Number.isInteger(eP) && eN >= 0 && eC >= 0 && eP >= 0 && eC <= eN && eP <= eN;
+    const cur = sp().override ?? counted();
+    return {eN, eC, eP, ok, changed: ok && (eN !== cur.evals || eC !== cur.passed || eP !== cur.failed)};
+  }
+  function render(){
+    const {a: ea, ent} = analytics(), D = st.filter, eh = ea.totals, em = ea.burn, ef = ea.byCategory, ey = ea.byFirm, ev = ea.byMonth;
+    const ej = ef[0]?.amount ?? 0, eg = ev.reduce((e, t) => Math.max(e, t.amount), 0), ex = em.deltaPct, cnt = counted(), tabs = firmTabs(), ts = totalsState();
+    const payouts = sp().payouts;
+    root.innerHTML = `<div class="stack">
+      <datalist id="spend-firms">${knownFirms().map(e => `<option value="${esc(e)}"></option>`).join('')}</datalist>
+      <div class="page-head"><div><h1>Spend</h1><p>Every eval, reset, and fee you have paid — and what a funded account is actually costing you.</p></div>
+        <button type="button" class="btn" data-act="csv" title="Download the summary, the by-firm table, payouts and every cost as a CSV">Export CSV</button></div>
+      ${st.err ? `<p class="err">${esc(st.err)}</p>` : ''}
+      ${tabs.length > 0 ? `<div class="chips"><button type="button" class="chip ${D === '' ? 'is-active' : ''}" data-filter="">All firms</button>${tabs.map(([k, l]) => `<button type="button" class="chip ${D === k ? 'is-active' : ''}" data-filter="${esc(k)}">${esc(l || UNASSIGNED_FIRM)}</button>`).join('')}</div>` : ''}
+      <div class="metrics">
+        ${metric('Total spent', usd0(eh.spent), `${eh.entries} cost${eh.entries === 1 ? '' : 's'} logged`, 'accent')}
+        ${metric('Pass rate', pct(ea.passRate), eh.evals === 0 ? 'Type how many evals you have bought and passed' : ea.passRateNote ? `${ea.passRateNote}${ea.undecidedEvals > 0 ? ` (${eh.passed} passed so far)` : ''}` : `${eh.passed} of ${ea.decidedEvals} decided eval${ea.decidedEvals === 1 ? '' : 's'}${ea.undecidedEvals > 0 ? `, ${ea.undecidedEvals} still open` : ''}`)}
+        ${metric('Cost per funded account', ea.costPerPass == null ? '—' : usd0(ea.costPerPass), ea.costPerPass == null ? 'Needs at least one pass' : `${eh.passed} passed`, 'warn')}
+        ${metric('Net', usd2(eh.net), eh.net < 0 ? `${usd0(ea.breakEven)} of payouts to break even` : 'Ahead of your costs', eh.net < 0 ? 'bad' : 'good')}
+        ${metric('Last 30 days', usd0(em.last30), ex == null ? 'No prior 30 days to compare' : `<span class="${ex > 0 ? 'up' : 'down'}">${ex > 0 ? '▲' : '▼'} ${pct(Math.abs(ex))} vs previous 30</span>`)}
+        ${metric('Average per month', usd0(em.monthlyAverage), `About ${usd0(em.projectedAnnual)} a year at this pace`)}
+        ${metric('Resets per eval', ea.resetRatio == null ? '—' : ea.resetRatio.toFixed(2), `${eh.evals} eval${eh.evals === 1 ? '' : 's'} and ${eh.resets} reset${eh.resets === 1 ? '' : 's'} bought`, ea.resetRatio != null && ea.resetRatio >= 1 ? 'bad' : '')}
+      </div>
+      ${D === '' ? `<div class="card"><div class="sec-head"><h3>Pass rate</h3><span class="num" data-slot="tot-pct" style="color:var(--gold);font-weight:600">${pct(ts.ok && ts.eN > 0 ? ts.eC / ts.eN : null, 1)}</span></div>
+        <p class="note">Type the real totals if the dashboard does not have every account. These numbers drive the pass rate and cost-per-pass above.</p>
+        <div class="grid" style="margin-top:12px">
+          <label class="f"><span>Evals purchased</span><input type="number" min="0" step="1" data-tot="q" value="${esc(st.q)}"></label>
+          <label class="f"><span>Passed</span><input type="number" min="0" step="1" data-tot="z" value="${esc(st.z)}"></label>
+          <label class="f"><span>Failed</span><input type="number" min="0" step="1" data-tot="Q" value="${esc(st.Q)}"></label></div>
+        <p class="err" data-slot="tot-err" style="margin-top:8px;${ts.ok || st.q === '' || st.z === '' || st.Q === '' ? 'display:none' : ''}">Passed and failed cannot be higher than evals purchased.</p>
+        <div class="row" style="margin-top:12px"><button type="button" class="btn primary" data-act="save-totals" ${ts.ok && ts.changed ? '' : 'disabled'}>Save totals</button>
+          ${sp().override ? '<button type="button" class="btn" data-act="use-counted">Use counted numbers</button>' : ''}</div>
+        <p class="note" style="margin-top:10px">Counted from your ledger and accounts: ${cnt.evals} purchased, ${cnt.passed} passed, ${cnt.failed} failed${sp().override ? ' — you are using your own totals.' : '.'}</p></div>` : ''}
+      ${eh.entries === 0 ? `<div class="card"><p><strong>Nothing logged yet.</strong></p><p class="muted" style="margin-top:4px">Add your first eval fee below. Once a few costs are in, this page shows what each funded account really cost you and where the money is leaking.</p></div>` : ''}
+      ${ef.length > 0 ? `<div class="card"><h3 style="margin-bottom:14px">Where the money goes</h3><div class="bars">${ef.map(e => `<div class="bar"><span>${catLabel(e.category)}</span><span class="track"><span class="fill" style="display:block;width:${ej > 0 ? (e.amount / ej * 100).toFixed(1) : 0}%"></span></span><span class="amt num">${usd0(e.amount)} · ${pct(e.share)}</span></div>`).join('')}</div></div>` : ''}
+      ${ev.length > 1 ? `<div class="card"><h3>Spend by month</h3><div class="months">${ev.map(e => `<div class="month" title="${monthLabel(e.month)}: ${usd2(e.amount)}"><span class="num">${usd0(e.amount)}</span><span class="col" style="height:${eg > 0 ? Math.max(2, e.amount / eg * 100) : 2}px"></span><span>${monthLabel(e.month)}</span></div>`).join('')}</div></div>` : ''}
+      <div class="card"><h3 style="margin-bottom:12px">By firm</h3>
+        ${ey.length > 0 ? `<div class="table-wrap"><table><thead><tr><th>Firm</th><th>Spent</th><th>Evals</th><th>Resets</th><th>Passed</th><th>Failed</th><th>Pass rate</th><th>Cost / eval</th><th>Cost / pass</th><th>Paid out</th><th>Net</th></tr></thead><tbody>
+          ${ey.map((e, i) => `<tr data-i="${i}"><td>${esc(e.firm)}</td><td class="num">${usd0(e.spent)}</td>
+            <td><input class="cnt" type="number" min="0" step="1" data-cnt="evals" value="${e.evals}"></td><td class="num">${e.resets}</td>
+            <td><input class="cnt" type="number" min="0" step="1" data-cnt="passed" value="${e.passed}"></td>
+            <td><input class="cnt" type="number" min="0" step="1" data-cnt="failed" value="${e.failed}"></td>
+            <td class="num">${pct(e.passRate)}</td><td class="num">${e.costPerEval == null ? '—' : usd0(e.costPerEval)}</td><td class="num">${e.costPerPass == null ? '—' : usd0(e.costPerPass)}</td>
+            <td class="num">${usd0(e.paidOut)}</td><td class="num ${e.net < 0 ? 'up' : 'down'}">${usd2(e.net)}</td></tr>`).join('')}</tbody></table></div>`
+          : '<p class="muted">No firms yet. Add one below, or log a cost, and you can type evals, passed, and failed.</p>'}
+        ${D === '' ? `<div class="row" style="margin-top:14px;align-items:flex-end"><label class="f" style="width:240px"><span>Add a firm</span><input list="spend-firms" data-newfirm value="${esc(st.newFirm)}" placeholder="Topstep"></label>
+          <button type="button" class="btn" data-act="add-firm" ${st.newFirm.trim() ? '' : 'disabled'}>Add firm</button></div>` : ''}
+        <p class="note" style="margin-top:10px">Click evals, passed, or failed to type the real counts. That is what the pass rate uses. Payouts still come from the ones you log below.</p></div>
+      <div class="card"><h3 style="margin-bottom:12px">Log a cost</h3>${costFields(st.cost, 'cost')}
+        <div style="margin-top:14px"><button type="button" class="btn primary" data-act="add-cost">Add cost</button></div></div>
+      <div class="card"><h3>Log a payout</h3><p class="note" style="margin:4px 0 12px">Payouts are what turn spend into a return. They drive your net here.</p>
+        <div class="grid">
+          <label class="f"><span>Firm</span><input list="spend-firms" data-pay="firm" value="${esc(st.payout.firm)}" placeholder="Topstep"></label>
+          <label class="f"><span>Amount</span><input type="number" min="0" step="0.01" data-pay="amount" value="${esc(st.payout.amount)}" placeholder="1850"></label>
+          <label class="f"><span>Date received</span><input type="date" data-pay="date" value="${esc(st.payout.date)}"></label>
+          <label class="f"><span>Note</span><input data-pay="note" value="${esc(st.payout.note)}" placeholder="first payout"></label></div>
+        <div style="margin-top:14px"><button type="button" class="btn primary" data-act="add-payout">Add payout</button></div>
+        ${payouts.length > 0 ? `<div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Date</th><th>Firm</th><th>Amount</th><th>Note</th><th></th></tr></thead><tbody>
+          ${payouts.map(e => `<tr data-pid="${esc(e.id)}"><td class="num">${esc(e.date)}</td><td>${esc(e.firm ?? '—')}</td><td class="num">${usd2(e.amount)}</td><td>${esc(e.note ?? '—')}</td><td><button type="button" class="btn sm danger" data-act="del-payout">Delete</button></td></tr>`).join('')}</tbody></table></div>` : ''}
+      </div>
+      ${sp().entries.length > 0 ? `<div class="card"><h3 style="margin-bottom:12px">All costs${D ? ' · filtered' : ''} <span class="faint">(${ent.length})</span></h3>
+        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Firm</th><th>Qty</th><th>Amount</th><th>Note</th><th></th></tr></thead><tbody>
+        ${ent.map(e => st.editId === e.id ? `<tr data-cid="${esc(e.id)}"><td colspan="7" style="white-space:normal">${costFields(st.editCost, 'edit')}
+            <div class="row" style="margin-top:10px"><button type="button" class="btn primary sm" data-act="save-edit">Save</button><button type="button" class="btn sm" data-act="cancel-edit">Cancel</button></div></td></tr>`
+          : `<tr data-cid="${esc(e.id)}"><td class="num">${esc(e.date)}</td><td>${catLabel(e.category)}</td><td>${esc(e.firm ?? '—')}</td><td class="num">${e.quantity}</td><td class="num">${usd2(e.amount)}</td><td>${esc(e.description ?? '—')}</td>
+            <td><div class="row" style="flex-wrap:nowrap"><button type="button" class="btn sm" data-act="edit-cost">Edit</button><button type="button" class="btn sm danger" data-act="del-cost">Delete</button></div></td></tr>`).join('')}
+        </tbody></table></div></div>` : ''}
+    </div>`;
+    root._rows = ey;
+  }
+  const costBody = e => ({id: e.id ?? newId(), category: e.category, firm: e.firm.trim() || null, quantity: Math.max(1, Number(e.quantity) || 1), amount: Number(e.amount), date: e.date || todayIso(), description: e.description.trim() || null, createdAt: e.createdAt ?? new Date().toISOString()});
+  function upsertFirm(firm, passed, failed, evals){
+    const k = normFirm(firm), list = sp().firmOverrides, i = list.findIndex(e => normFirm(e.firm) === k);
+    const prev = i >= 0 ? list[i] : null, row = {firm: prev?.firm ?? firm, passed, failed, evals: evals !== undefined ? evals : (prev?.evals ?? null)};
+    if (i >= 0) list[i] = row; else list.push(row);
+    save('spend'); render();
+  }
+  function csv(){
+    const {a: t, ent} = analytics(), D = st.filter, l = t.totals, o = [], d = todayIso();
+    const y = e => e == null ? '""' : `"${(typeof e === 'number' ? String(e) : e).replace(/"/g, '""')}"`, v = e => e.map(y).join(','), j = e => e == null ? '' : e.toFixed(2), g = e => e == null ? '' : `${(100 * e).toFixed(1)}%`;
+    const firmName = D ? (firmTabs().find(([k]) => k === D)?.[1] || UNASSIGNED_FIRM) : null;
+    const pays = D ? sp().payouts.filter(e => normFirm(e.firm) === D) : sp().payouts;
+    o.push(v(['Spend export']), v(['Generated', d]), v(['Firm filter', firmName?.trim() || 'All firms']), '', v(['Summary']), v(['Metric', 'Value']),
+      v(['Total spent', j(l.spent)]), v(['Total paid out', j(l.paidOut)]), v(['Net', j(l.net)]), v(['Costs logged', l.entries]), v(['Evals bought', l.evals]),
+      v(['Evals passed', l.passed]), v(['Evals failed', l.failed]), v(['Resets bought', l.resets]), v(['Pass rate', g(t.passRate)]), v(['Cost per funded account', j(t.costPerPass)]),
+      v(['Payouts still needed to break even', j(t.breakEven)]), v(['Resets per eval', t.resetRatio == null ? '' : t.resetRatio.toFixed(2)]), v(['Spent last 30 days', j(t.burn.last30)]),
+      v(['Spent previous 30 days', j(t.burn.prev30)]), v(['Average per month', j(t.burn.monthlyAverage)]), v(['Projected per year at this pace', j(t.burn.projectedAnnual)]), '',
+      v(['By firm']), v(['Firm', 'Spent', 'Evals', 'Resets', 'Passed', 'Failed', 'Pass rate', 'Cost per eval', 'Cost per pass', 'Paid out', 'Net']));
+    for (const e of t.byFirm) o.push(v([e.firm || UNASSIGNED_FIRM, j(e.spent), e.evals, e.resets, e.passed, e.failed, g(e.passRate), j(e.costPerEval), j(e.costPerPass), j(e.paidOut), j(e.net)]));
+    if (t.byFirm.length === 0) o.push(v(['No firms yet']));
+    o.push('', v(['Payouts']), v(['Date', 'Firm', 'Amount', 'Note']));
+    for (const e of pays) o.push(v([e.date, e.firm?.trim() || UNASSIGNED_FIRM, j(e.amount), e.note ?? '']));
+    if (pays.length === 0) o.push(v(['No payouts logged']));
+    o.push('', v(['All costs']), v(['Date', 'Category', 'Firm', 'Quantity', 'Amount', 'Cost per unit', 'Note']));
+    for (const e of ent) o.push(v([e.date, catLabel(e.category), e.firm?.trim() || UNASSIGNED_FIRM, e.quantity, j(e.amount), j(e.quantity > 0 ? e.amount / e.quantity : e.amount), e.description ?? '']));
+    if (ent.length === 0) o.push(v(['No costs logged']));
+    const slug = firmName?.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return {filename: slug ? `spend-${slug}-${d}.csv` : `spend-${d}.csv`, data: '﻿' + o.join('\n')};
+  }
+  async function exportCsv(){
+    const f = csv();
+    let dl = null; try { dl = window.claude?.use ? await window.claude.use('downloads') : null; } catch {}
+    if (dl) {
+      try { await dl.save(f); } catch (e) { if (e?.code !== 'declined') toast('Export failed: ' + (e?.message || e?.code)); }
+      return;
+    }
+    try { const u = URL.createObjectURL(new Blob([f.data], {type: 'text/csv;charset=utf-8;'})), a = document.createElement('a'); a.href = u; a.download = f.filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); }
+    catch { toast('Export is not available here.'); }
+  }
+
+  root.addEventListener('input', e => {
+    const t = e.target, d = t.dataset;
+    if (d.cost) st.cost[d.cost] = t.value;
+    else if (d.edit) st.editCost[d.edit] = t.value;
+    else if (d.pay) st.payout[d.pay] = t.value;
+    else if ('newfirm' in d) { st.newFirm = t.value; const b = $('[data-act="add-firm"]', root); if (b) b.disabled = !st.newFirm.trim(); }
+    else if (d.tot) {
+      st[d.tot] = t.value; const ts = totalsState();
+      $('[data-slot="tot-pct"]', root).textContent = pct(ts.ok && ts.eN > 0 ? ts.eC / ts.eN : null, 1);
+      $('[data-slot="tot-err"]', root).style.display = ts.ok || st.q === '' || st.z === '' || st.Q === '' ? 'none' : '';
+      $('[data-act="save-totals"]', root).disabled = !(ts.ok && ts.changed);
+    }
+  });
+  root.addEventListener('change', e => {
+    const t = e.target;
+    if (t.tagName === 'SELECT') { if (t.dataset.cost) st.cost[t.dataset.cost] = t.value; if (t.dataset.edit) st.editCost[t.dataset.edit] = t.value; }
+    if (t.dataset.cnt) {
+      const row = root._rows[Number(t.closest('tr').dataset.i)], n = Math.floor(Number(t.value));
+      if (!Number.isInteger(n) || n < 0) { t.value = row[t.dataset.cnt]; return; }
+      if (n === row[t.dataset.cnt]) return;
+      if (t.dataset.cnt === 'evals') upsertFirm(row.firm, row.passed, row.failed, n);
+      else if (t.dataset.cnt === 'passed') upsertFirm(row.firm, n, row.failed);
+      else upsertFirm(row.firm, row.passed, n);
+    }
+  });
+  root.addEventListener('click', e => {
+    const f = e.target.closest('[data-filter]');
+    if (f) { st.filter = f.dataset.filter; st.editId = null; render(); return; }
+    const act = e.target.closest('[data-act]')?.dataset.act; if (!act) return;
+    const cid = e.target.closest('tr[data-cid]')?.dataset.cid, pid = e.target.closest('tr[data-pid]')?.dataset.pid;
+    st.err = null;
+    if (act === 'csv') exportCsv();
+    else if (act === 'add-cost') {
+      const n = Number(st.cost.amount);
+      if (!Number.isFinite(n) || n <= 0) { st.err = 'Enter how much it cost.'; render(); return; }
+      sp().entries.push(costBody(st.cost)); sp().entries.sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+      st.cost = {...blankCost(), category: st.cost.category, firm: st.cost.firm, date: st.cost.date};
+      save('spend'); loadTotalsIfCounted(); render();
+    } else if (act === 'edit-cost') {
+      const c = sp().entries.find(x => x.id === cid); if (!c) return;
+      st.editId = cid; st.editCost = {category: c.category, firm: c.firm ?? '', quantity: String(c.quantity ?? 1), amount: String(c.amount), date: c.date, description: c.description ?? ''}; render();
+    } else if (act === 'cancel-edit') { st.editId = null; render(); }
+    else if (act === 'save-edit') {
+      const i = sp().entries.findIndex(x => x.id === st.editId); if (i < 0) return;
+      const n = Number(st.editCost.amount); if (!Number.isFinite(n) || n <= 0) { st.err = 'Enter how much it cost.'; render(); return; }
+      sp().entries[i] = costBody({...st.editCost, id: st.editId, createdAt: sp().entries[i].createdAt});
+      sp().entries.sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+      st.editId = null; save('spend'); loadTotalsIfCounted(); render();
+    } else if (act === 'del-cost') { sp().entries = sp().entries.filter(x => x.id !== cid); save('spend'); loadTotalsIfCounted(); render(); }
+    else if (act === 'add-payout') {
+      const n = Number(st.payout.amount);
+      if (!Number.isFinite(n) || n <= 0) { st.err = 'Enter how much you were paid.'; render(); return; }
+      sp().payouts.push({id: newId(), firm: st.payout.firm.trim() || null, amount: n, date: st.payout.date || todayIso(), note: st.payout.note.trim() || null});
+      sp().payouts.sort((a, b) => b.date.localeCompare(a.date));
+      st.payout = {...st.payout, amount: '', note: ''}; save('spend'); render();
+    } else if (act === 'del-payout') { sp().payouts = sp().payouts.filter(x => x.id !== pid); save('spend'); render(); }
+    else if (act === 'save-totals') { const ts = totalsState(); if (!ts.ok) return; sp().override = {evals: ts.eN, passed: ts.eC, failed: ts.eP}; save('spend'); render(); }
+    else if (act === 'use-counted') { sp().override = null; save('spend'); loadTotals(); render(); }
+    else if (act === 'add-firm') { const n = st.newFirm.trim(); if (!n) return; st.newFirm = ''; upsertFirm(n, 0, 0); }
+  });
+  function loadTotalsIfCounted(){ if (!sp().override) loadTotals(); }
+  render();
+  onDoc('spend', () => { if (root.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return; loadTotalsIfCounted(); render(); });
+  onDoc('accounts', () => { loadTotalsIfCounted(); if (!root.contains(document.activeElement)) render(); });
+  return {refresh(){ loadTotalsIfCounted(); render(); }};
+}
+
+/* ============================================================
+   Variance lab — a pretend funded account, one click at a time
+   ============================================================ */
+const VAR_TRADES = {
+  target2k: {label: 'Risk $1,000 to make $2,000', wonLabel: 'Hit the $2,000 target', lostLabel: 'Stopped out for $1,000', risk: 1e3, reward: 2e3, winRate: 1 / 3},
+  target3k: {label: 'Risk $1,000 to make $3,000', wonLabel: 'Hit the $3,000 target', lostLabel: 'Stopped out for $1,000', risk: 1e3, reward: 3e3, winRate: .25},
+  target4k: {label: 'Risk $1,000 to make $4,000', wonLabel: 'Hit the $4,000 target', lostLabel: 'Stopped out for $1,000', risk: 1e3, reward: 4e3, winRate: .2},
+  day200: {label: 'Grind a day for ±$200', wonLabel: 'Green day, +$200', lostLabel: 'Red day, −$200', risk: 200, reward: 200, winRate: .5},
+};
+const VAR_CFG = {accountSize: 5e4, evalCost: 150, evalPassRate: .3, drawdown: 2e3, payoutCap: 2e3, payoutWinningDays: 5, payoutMinimum: 100};
+const VAR_KEY = 'variance-lab-v2';
+const freshRun = () => ({phase: 'eval', balance: 0, highWater: 0, winningDays: 0, evalsBought: 0, evalsPassed: 0, accountsBlown: 0, payoutsTaken: 0, totalSpent: 0, totalPaidOut: 0, trades: 0, wins: 0, tradePnl: 0, events: []});
+const realMoney = e => Math.round((e.totalPaidOut - e.totalSpent) * 100) / 100;
+const floorOf = (e, t) => e.phase !== 'funded' ? null : Math.min(e.highWater - t.drawdown, t.accountSize);
+const daysLeft = (e, t) => Math.max(0, t.payoutWinningDays - e.winningDays);
+function payoutAvail(e, t){
+  if (e.phase !== 'funded' || daysLeft(e, t) > 0) return 0;
+  const n = e.balance - t.accountSize; if (n <= 0) return 0;
+  const a = floorOf(e, t), r = a === null ? 1 / 0 : Math.max(0, e.balance - a - 1), s = Math.floor(Math.min(n / 2, t.payoutCap, r));
+  return s >= t.payoutMinimum ? s : 0;
+}
+const evt = (e, t) => ({...t, n: e.events.length + 1, net: realMoney(e)});
+const vUsd = e => `${e < 0 ? '-' : ''}$${Math.abs(e).toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+const vSigned = e => e > 0 ? `+${vUsd(e)}` : vUsd(e);
+
+function VariancePage(root){
+  let cfg = {...VAR_CFG}, passStr = '30', run = freshRun();
+  try { const t = JSON.parse(LS.raw(VAR_KEY) || 'null'); if (t?.config && t?.run) { cfg = {...VAR_CFG, evalCost: t.config.evalCost, evalPassRate: t.config.evalPassRate}; run = t.run; passStr = String(Math.round(100 * t.config.evalPassRate)); } } catch {}
+  const persist = () => LS.setRaw(VAR_KEY, JSON.stringify({config: cfg, run}));
+  function buyEval(){
+    if (run.phase !== 'eval') return;
+    const a = {...run, events: [...run.events], evalsBought: run.evalsBought + 1, totalSpent: run.totalSpent + cfg.evalCost}, pass = Math.random() < cfg.evalPassRate;
+    if (pass) Object.assign(a, {phase: 'funded', balance: cfg.accountSize, highWater: cfg.accountSize, winningDays: 0, evalsPassed: run.evalsPassed + 1});
+    a.events.push(evt(a, {kind: pass ? 'eval_pass' : 'eval_fail', label: pass ? 'Passed the eval' : 'Failed the eval', amount: -cfg.evalCost, balance: pass ? cfg.accountSize : null}));
+    run = a;
+  }
+  function trade(k){
+    if (run.phase !== 'funded') return;
+    const s = VAR_TRADES[k], win = Math.random() < s.winRate, o = win ? s.reward : -s.risk, c = run.balance + o;
+    const d = {...run, events: [...run.events], balance: c, highWater: Math.max(run.highWater, c), winningDays: run.winningDays + (win ? 1 : 0), trades: run.trades + 1, wins: run.wins + (win ? 1 : 0), tradePnl: run.tradePnl + o};
+    d.events.push(evt(d, {kind: win ? 'win' : 'loss', label: win ? s.wonLabel : s.lostLabel, amount: o, balance: c}));
+    const h = floorOf(d, cfg);
+    if (h !== null && c <= h) { Object.assign(d, {phase: 'eval', balance: 0, highWater: 0, winningDays: 0, accountsBlown: run.accountsBlown + 1}); d.events.push(evt(d, {kind: 'blown', label: 'Account blown — back to buying an eval', amount: 0, balance: null})); }
+    run = d;
+  }
+  function payout(){
+    const n = payoutAvail(run, cfg); if (n <= 0) return;
+    const a = {...run, events: [...run.events], balance: run.balance - n, winningDays: 0, payoutsTaken: run.payoutsTaken + 1, totalPaidOut: run.totalPaidOut + n};
+    a.events.push(evt(a, {kind: 'payout', label: 'Took a payout', amount: n, balance: a.balance})); run = a;
+  }
+  function chart(points){
+    if (points.length < 2) return '';
+    const n = Math.min(0, ...points), a = Math.max(0, ...points), r = a - n || 1, y = e => 160 - (e - n) / r * 160, pctY = e => (a - e) / r * 100;
+    const d = points.map((t, i) => `${i === 0 ? 'M' : 'L'} ${(i / (points.length - 1) * 720).toFixed(1)} ${y(t).toFixed(1)}`).join(' '), last = points[points.length - 1];
+    return `<div class="chart"><svg viewBox="0 0 720 160" preserveAspectRatio="none" role="img" aria-label="Real money over time, currently ${vSigned(last)}">
+      <line class="zero" x1="0" x2="720" y1="${y(0)}" y2="${y(0)}"></line><path class="line ${last < 0 ? 'is-down' : ''}" d="${d}"></path></svg>
+      ${a > 0 && pctY(0) - pctY(a) > 12 ? `<span class="lab" style="top:0">${vUsd(a)}</span>` : ''}
+      <span class="lab" style="top:calc(${pctY(0)}% * .94)">$0</span>
+      ${n < 0 && pctY(n) - pctY(0) > 12 ? `<span class="lab" style="bottom:10px">${vUsd(n)}</span>` : ''}
+      <span class="lab" style="left:0;top:0;font-weight:600;color:${last < 0 ? 'var(--neg)' : 'var(--pos)'}">${vSigned(last)}</span></div>`;
+  }
+  function render(){
+    const going = run.events.length > 0, N = floorOf(run, cfg), w = payoutAvail(run, cfg), S2 = daysLeft(run, cfg), P = realMoney(run);
+    root.innerHTML = `<div class="stack">
+      <div class="page-head"><div><h1>Variance</h1><p>A pretend prop firm account, one click at a time. Nothing here touches your real spend or payouts — it only lives in this browser.</p></div></div>
+      <div class="card"><div class="sec-head"><h3>Account rules</h3>${going ? '<button type="button" class="btn" data-act="reset">Start over</button>' : ''}</div>
+        ${going ? '<p class="note" style="margin-bottom:10px">Locked while a run is going. Start over to change them.</p>' : ''}
+        <div class="grid"><label class="f"><span>Eval cost</span><input type="number" min="0" step="5" data-cfg="evalCost" value="${cfg.evalCost}" ${going ? 'disabled' : ''}></label>
+          <label class="f"><span>Your pass rate (%)</span><input type="number" min="0" max="100" step="1" data-cfg="pass" value="${esc(passStr)}" ${going ? 'disabled' : ''}></label></div></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">Spent on evals</div><div class="v">${vUsd(run.totalSpent)}</div><div class="h">${run.evalsBought} bought, ${run.evalsPassed} passed</div></div>
+        <div class="metric"><div class="k">Paid out</div><div class="v">${vUsd(run.totalPaidOut)}</div><div class="h">${run.payoutsTaken} withdrawals</div></div>
+        <div class="metric ${P < 0 ? 'bad' : 'good'}"><div class="k">Real money</div><div class="v">${vSigned(P)}</div><div class="h">what you actually keep</div></div>
+        <div class="metric"><div class="k">Accounts blown</div><div class="v">${run.accountsBlown}</div><div class="h">${run.trades} trade${run.trades === 1 ? '' : 's'} taken</div></div>
+      </div>
+      <div class="card">${run.phase === 'eval' ? `<h3>You have no account</h3><p class="muted" style="margin:4px 0 14px">Buy an evaluation and trade it. You pass ${esc(passStr || 0)}% of the ones you take.</p>
+          <div class="actions"><button type="button" class="act primary" data-act="buy"><span class="a1">Buy an eval and trade it</span><span class="a2">costs ${vUsd(cfg.evalCost)}</span></button></div>`
+        : `<div class="sec-head"><h3>Funded — ${vUsd(run.balance)}</h3><span class="pill">Blows up at ${vUsd(N ?? 0)} · ${vUsd(run.balance - (N ?? 0))} of room</span></div>
+          <p class="note">${run.highWater >= cfg.accountSize + cfg.drawdown ? `Your max loss is locked at ${vUsd(cfg.accountSize)} for good — this account has been above ${vUsd(cfg.accountSize + cfg.drawdown)}.` : `Your max loss follows every new high until the account touches ${vUsd(cfg.accountSize + cfg.drawdown)}, then it locks at ${vUsd(cfg.accountSize)}.`}</p>
+          <div class="row" style="margin:14px 0;align-items:flex-start;flex-wrap:nowrap"><div class="days">${Array.from({length: cfg.payoutWinningDays}, (_, i) => `<span class="day ${i < run.winningDays ? 'is-done' : ''}"></span>`).join('')}</div>
+            <div><strong>${Math.min(run.winningDays, cfg.payoutWinningDays)} of ${cfg.payoutWinningDays} winning days</strong><p class="note">The firm will not pay you until you bank ${cfg.payoutWinningDays} winning days. Taking a payout resets the count, and so does blowing the account up.</p></div></div>
+          <div class="actions">${Object.keys(VAR_TRADES).map(k => `<button type="button" class="act" data-trade="${k}"><span class="a1">${VAR_TRADES[k].label}</span><span class="a2">one trade</span></button>`).join('')}
+            <button type="button" class="act primary" data-act="payout" ${w <= 0 ? 'disabled' : ''}><span class="a1">Take a payout</span><span class="a2">${S2 > 0 ? `${S2} more winning day${S2 === 1 ? '' : 's'} first` : run.balance <= cfg.accountSize ? 'need profit first' : w <= 0 ? `${vUsd(cfg.payoutMinimum)} minimum withdrawal` : `${vUsd(w)} into your pocket`}</span></button></div>`}
+      </div>
+      ${going ? `<div class="card"><h3 style="margin-bottom:10px">Real money over time</h3>${chart([0, ...run.events.map(e => e.net)])}</div>` : ''}
+      ${run.events.length > 0 ? `<div class="card"><h3 style="margin-bottom:12px">What happened</h3><div class="table-wrap"><table><thead><tr><th>#</th><th>Event</th><th>Amount</th><th>Balance</th><th>Real money</th></tr></thead><tbody>
+        ${[...run.events].reverse().slice(0, 60).map(e => `<tr><td class="num">${e.n}</td><td><span class="tag ${e.kind}">${esc(e.label)}</span></td><td class="num ${e.amount < 0 ? 'up' : e.amount > 0 ? 'down' : ''}">${e.amount === 0 ? '—' : vSigned(e.amount)}</td>
+          <td class="num">${e.balance === null ? '—' : vUsd(e.balance)}</td><td class="num ${e.net < 0 ? 'up' : 'down'}">${vSigned(e.net)}</td></tr>`).join('')}</tbody></table></div>
+        ${run.events.length > 60 ? `<p class="note" style="margin-top:8px">Showing the last 60 of ${run.events.length} events.</p>` : ''}</div>` : ''}
+    </div>`;
+  }
+  root.addEventListener('input', e => {
+    const c = e.target.dataset.cfg; if (!c) return;
+    if (c === 'evalCost') cfg = {...cfg, evalCost: Number(e.target.value) || 0};
+    else { passStr = e.target.value; const t = Number(passStr); if (Number.isFinite(t)) cfg = {...cfg, evalPassRate: Math.min(100, Math.max(0, t)) / 100}; }
+    persist();
+  });
+  root.addEventListener('click', e => {
+    const tr = e.target.closest('[data-trade]'), act = e.target.closest('[data-act]')?.dataset.act;
+    if (tr) trade(tr.dataset.trade); else if (act === 'buy') buyEval(); else if (act === 'payout') payout(); else if (act === 'reset') run = freshRun(); else return;
+    persist(); render();
+  });
+  render();
+  return {refresh: render};
+}
+
+/* ============================================================
+   Calculators
+   ============================================================ */
+const CALC_FIRMS = [['Topstep 50K', 40], ['Lucid Flex 50K', 40], ['Tradeify Select', 40], ['MFF Rapid EOD 50K', 35], ['FundedSeat Standard Daily', 35], ['FundedNext 50K Flex', 40], ['Custom', 40]];
+const CALC_COST = {'Topstep 50K': 49, 'Lucid Flex 50K': 84.5, 'Tradeify Select': 111, 'MFF Rapid EOD 50K': 77, 'FundedSeat Standard Daily': 79, 'FundedNext 50K Flex': 70};
+function CalculatorPage(root){
+  const v = {evAvg: 2000, evChance: 40, evCost: 49, evPass: 40, pts: 20, ctr: 1, usd: 100, simBank: 500, simFirm: 'Topstep 50K', simPass: 40, simChance: 40, simAvg: 2000, simCustom: 89,
+    bFirm: 'Topstep 50K', bPass: 40, bBank: 500, bMax: 10};
+  const LIM = {evAvg: [0], evChance: [0, 100], evCost: [0], evPass: [0, 100], pts: [0], ctr: [0], usd: [0], simBank: [0], simPass: [0, 100], simChance: [0, 100], simAvg: [0], simCustom: [0], bPass: [0, 100], bBank: [0], bMax: [1, 20]};
+  const inp = (k, step) => `<input type="text" inputmode="decimal" data-k="${k}" value="${v[k]}" ${step ? 'data-step="1"' : ''}>`;
+  const firmSel = (k, fmt) => `<select data-sel="${k}">${CALC_FIRMS.map(([n, p]) => `<option value="${esc(n)}" ${v[k] === n ? 'selected' : ''}>${esc(fmt(n, p))}</option>`).join('')}</select>`;
+  root.innerHTML = `<div class="stack">
+    <div class="page-head"><div><h1>Calculators</h1><p>EV, NQ points to dollars, risk of ruin, and bankroll sizing.</p></div></div>
+    <div class="card"><h2>EV Calculator</h2><p class="note" style="margin:4px 0 14px">Expected value per eval: (pass rate × payout chance × avg payout) − eval cost.</p>
+      <div class="calc-grid"><label class="f"><span>Average payout ($)</span>${inp('evAvg')}</label><label class="f"><span>Payout chance (%)</span>${inp('evChance')}</label>
+        <label class="f"><span>Eval cost ($)</span>${inp('evCost')}</label><label class="f"><span>Eval pass rate (%)</span>${inp('evPass')}</label></div>
+      <p class="result" data-out="ev"></p></div>
+    <div class="card"><h2>NQ Points · Contracts · $</h2><p class="note" style="margin:4px 0 14px">$20 per point per contract. Enter any two; the third updates.</p>
+      <div class="triad"><label class="f"><span>Points</span>${inp('pts')}</label><span class="op">×</span><label class="f"><span>Contracts</span>${inp('ctr', 1)}</label><span class="op">=</span><label class="f"><span>$</span>${inp('usd')}</label></div></div>
+    <div class="card"><h2>Returns Simulator</h2><p class="note" style="margin:4px 0 14px">Simulate 1,000 eval attempts: pass rate, then payout chance and average payout if funded. See average return and sample outcomes.</p>
+      <div class="calc-grid"><label class="f"><span>Bankroll / amount ($)</span>${inp('simBank')}</label>
+        <label class="f"><span>Firm (eval cost)</span>${firmSel('simFirm', n => `${n} ($${CALC_COST[n] ?? v.simCustom})`)}</label>
+        <label class="f" data-show="custom"><span>Eval cost ($)</span>${inp('simCustom')}</label>
+        <label class="f"><span>Pass rate (%)</span>${inp('simPass')}</label><label class="f"><span>Payout chance (%)</span>${inp('simChance')}</label>
+        <label class="f"><span>Average payout ($)</span>${inp('simAvg')}</label></div>
+      <div style="margin-top:14px"><button type="button" class="btn primary" data-act="sim">Simulate returns</button></div>
+      <div data-out="sim"></div></div>
+    <div class="card"><h2>Eval Budget &amp; Pass Odds</h2><p class="note" style="margin:4px 0 14px"><strong>Budget + odds.</strong> How many evals you can afford, and your chance of passing 1, 2, 3… in a row (same pass rate each time).</p>
+      <div class="calc-grid"><label class="f"><span>Prop firm challenge</span>${firmSel('bFirm', (n, p) => `${n} (${p}% pass)`)}</label>
+        <label class="f"><span>Your pass rate (%)</span>${inp('bPass')}</label><label class="f"><span>Bankroll ($)</span>${inp('bBank')}</label><label class="f"><span>Show evals up to</span>${inp('bMax')}</label></div>
+      <div data-out="budget" style="margin-top:14px"></div></div>
+  </div>`;
+  const setInput = (k, val) => { const el = $(`[data-k="${k}"]`, root); if (el && document.activeElement !== el) el.value = val; };
+  function compute(){
+    $('[data-out="ev"]', root).textContent = `EV per eval: $${(v.evPass / 100 * (v.evChance / 100) * v.evAvg - v.evCost).toFixed(2)}`;
+    $('[data-show="custom"]', root).style.display = v.simFirm === 'Custom' ? '' : 'none';
+    const M = v.bPass / 100, I = v.bFirm in CALC_COST && v.bBank > 0 ? Math.floor(v.bBank / CALC_COST[v.bFirm]) : null, B = Math.min(20, Math.max(1, v.bMax)), k = Math.max(1, I ?? B);
+    const choose = (n, t) => { if (t < 0 || t > n) return 0; t = Math.min(t, n - t); let r = 1; for (let i = 0; i < t; i++) r = r * (n - i) / (i + 1); return r; };
+    const D = Array.from({length: k + 1}, (_, t) => ({evals: t, pct: choose(k, t) * Math.pow(M, t) * Math.pow(1 - M, k - t) * 100}));
+    const L = I != null && I > 0 ? (1 - Math.pow(1 - M, I)) * 100 : null;
+    $('[data-out="budget"]', root).innerHTML = `${I != null && I > 0 ? `<p>With $${v.bBank.toLocaleString()} you can afford ~${I} eval${I !== 1 ? 's' : ''} at this firm.</p>${L != null ? `<p>Chance you pass at least one of those: <strong class="num">${L.toFixed(1)}%</strong></p>` : ''}` : ''}
+      <p class="note" style="margin-top:6px">Chance of 0 (fail all) is the same as risk of ruin for evals.</p>
+      <p style="margin-top:12px"><strong>In ${k} attempts: chance you pass exactly 0, 1, … ${k}</strong></p>
+      <p class="note">Binomial: each row is P(exactly that many passes in ${k} tries). Adds to 100%.</p>
+      <ul class="plain">${D.map(({evals: e, pct: n}) => `<li><span>${e === 0 ? 'Exactly 0 (fail all)' : `Exactly ${e}`}</span><strong>${n >= .01 ? n.toFixed(2) : n >= 1e-4 ? n.toFixed(4) : '<0.01'}%</strong></li>`).join('')}</ul>`;
+  }
+  root.addEventListener('input', e => {
+    const k = e.target.dataset.k; if (!k) return;
+    const s = e.target.value; if (s === '' || s === '-') return;
+    let n = e.target.dataset.step ? parseFloat(s) : parseInt(s, 10); if (Number.isNaN(n)) return;
+    const [lo, hi] = LIM[k] || []; if (lo != null && n < lo) n = lo; if (hi != null && n > hi) n = hi;
+    v[k] = n;
+    if (k === 'pts') { v.usd = 20 * n * v.ctr; setInput('usd', v.usd); }
+    if (k === 'ctr') { v.usd = 20 * v.pts * n; setInput('usd', v.usd); }
+    if (k === 'usd' && v.pts > 0) { v.ctr = n / (20 * v.pts); setInput('ctr', v.ctr); }
+    if (k === 'simPass') { v.simFirm = 'Custom'; $('[data-sel="simFirm"]', root).value = 'Custom'; }
+    if (k === 'bPass') { v.bFirm = 'Custom'; $('[data-sel="bFirm"]', root).value = 'Custom'; }
+    if (k === 'simCustom') { const o = $('[data-sel="simFirm"] option[value="Custom"]', root); if (o) o.textContent = `Custom ($${v.simCustom})`; }
+    compute();
+  });
+  root.addEventListener('focusout', e => { const k = e.target.dataset.k; if (k) e.target.value = v[k]; });
+  root.addEventListener('change', e => {
+    const s = e.target.dataset.sel; if (!s) return;
+    v[s] = e.target.value; const f = CALC_FIRMS.find(x => x[0] === v[s]);
+    if (f && f[0] !== 'Custom') { if (s === 'simFirm') { v.simPass = f[1]; setInput('simPass', f[1]); } else { v.bPass = f[1]; setInput('bPass', f[1]); } }
+    compute();
+  });
+  root.addEventListener('click', e => {
+    if (!e.target.closest('[data-act="sim"]')) return;
+    const et = v.simFirm in CALC_COST ? CALC_COST[v.simFirm] : v.simCustom, p = v.simPass / 100, c = v.simChance / 100, J = v.simAvg, out = []; let r = 0;
+    for (let a = 0; a < 1e3; a++) {
+      if (!(Math.random() < p)) { out.push({label: 'Eval failed', ret: -et}); r -= et; continue; }
+      if (!(Math.random() < c)) { out.push({label: 'Eval passed, funded failed', ret: -et}); r -= et; continue; }
+      r += -et + J; out.push({label: `Eval passed, funded passed, payout $${J.toLocaleString()}`, ret: -et + J});
+    }
+    const avg = r / 1e3, last = out.slice(-10).reverse();
+    $('[data-out="sim"]', root).innerHTML = `<div style="margin-top:16px"><p class="result" style="margin-top:0">Average payout $${(v.simBank + avg).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})} on your $${v.simBank.toLocaleString()} investment.</p>
+      <p class="note">Plus $${J.toLocaleString()} of profit remaining in funded account.</p><p style="margin-top:10px"><strong>Last 10 outcomes:</strong></p>
+      <ul class="plain">${last.map(o => `<li><span>${esc(o.label)}</span><span class="r ${o.ret >= 0 ? 'down' : 'up'}">${o.ret >= 0 ? '+' : ''}$${o.ret.toFixed(0)}</span></li>`).join('')}</ul></div>`;
+  });
+  compute();
+  return {refresh(){}};
+}
+
+/* ============================================================
+   Recommended prop firms
+   ============================================================ */
+const FIRM_CARDS = [
+  ['Topstep 50K', 'Evaluation (no add-ons)', '$50,000', '$2,000', '$3,000', '5 contracts (eval) / 2 funded', '$49 + $149 activation', '40%', '$2,000', '40%', 'JJ', 'Eval is $49 with a $149 activation fee paid after passing. Follow the dashboard 2K/3K targets. EOD trailing drawdown.'],
+  ['Lucid Flex 50K', 'Evaluation', '$50,000', '$2,000', '$3,000', '4 contracts', '$84.50', '40%', '$2,000', '33%', 'JJ', 'EOD trailing drawdown.'],
+  ['Tradeify Select 50K', 'Evaluation', '$50,000', '$2,000', '$3,000', '4 contracts', '$111', '40%', '$2,000', '33%', 'JJ', 'EOD trailing drawdown.'],
+  ['MFF Rapid EOD 50K', 'Evaluation', '$50,000', '$2,000', '$3,000', '2 contracts', '$77', '35%', '$1,000', '60%', 'JJ', 'Two contracts on every trade. Eval is −$1,000 / +$750 until $53,000. Funded is −$1,000 / +$3,000 until above $52,000, then −$1,000 / +$1,500. EOD trailing drawdown.'],
+  ['FundedSeat Standard Daily', 'Evaluation', '$50,000', '$2,000', '$3,000', '2 contracts', '$79', '35%', '$1,500', '50%', 'JJ', 'Two contracts on every trade. Eval is −$1,000 / +$1,520 until $53,000. Funded matches MFF Rapid EOD: −$1,000 / +$3,000 until above $52,000, then −$1,000 / +$1,500.'],
+];
+function PropFirmsPage(root){
+  const k = ['Eval type', 'Account size', 'Drawdown', 'Profit target', 'Contracts', 'Eval cost', 'Pass rate', 'Avg payout', 'Payout chance', 'Discount code'];
+  root.innerHTML = `<div class="stack">
+    <div class="page-head"><div><h1>Recommended prop firms</h1><p>The 50K accounts to start with: Topstep 50K or Lucid Flex 50K, then add Tradeify Select, MFF Rapid EOD, or FundedSeat Standard Daily. Pass rate, average payout and payout chance come from a year of trading these firms with the dashboard's risk numbers.</p></div></div>
+    <div class="banner"><strong>Discount codes:</strong> use code <strong>JJ</strong> at checkout on every prop firm — except Alpha firms, where the code is <strong>JJSIMON</strong>.</div>
+    <div class="firms">${FIRM_CARDS.map(c => `<div class="card firm"><h2>${esc(c[0])}</h2><dl>${k.map((l, i) => `<div><dt>${l}</dt><dd class="${i === 9 ? 'code' : ''}">${esc(c[i + 1])}</dd></div>`).join('')}</dl><p class="note">${esc(c[11])}</p></div>`).join('')}</div>
+  </div>`;
+  return {refresh(){}};
+}
+
+/* ============================================================
+   App shell
+   ============================================================ */
+const PAGES = {};
+function showTab(name){
+  if (!PAGES[name]) name = 'dashboard';
+  $$('.tab').forEach(t => t.classList.toggle('is-active', t.dataset.tab === name));
+  $$('.view').forEach(v => v.classList.toggle('is-active', v.id === 'view-' + name));
+  PAGES[name].refresh?.();
+  LS.setRaw('rcc:tab', name);
+}
+function boot(){
+  PAGES.dashboard = Manager($('#view-dashboard'), 'dashboard');
+  PAGES.backtesting = Manager($('#view-backtesting'), 'backtesting');
+  PAGES.spend = SpendPage($('#view-spend'));
+  PAGES.variance = VariancePage($('#view-variance'));
+  PAGES.calculator = CalculatorPage($('#view-calculator'));
+  PAGES['prop-firms'] = PropFirmsPage($('#view-prop-firms'));
+  $('#tabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) { showTab(t.dataset.tab); window.scrollTo({top: 0}); } });
+  showTab(LS.raw('rcc:tab') || 'dashboard');
+  initStore();
+  // refresh "traded today" state when the 6pm ET trading day rolls over
+  let lastKey = dayKey(new Date());
+  setInterval(() => { const k = dayKey(new Date()); if (k !== lastKey) { lastKey = k; PAGES.dashboard.refresh(); PAGES.backtesting.refresh(); } }, 60000);
+}
+boot();
+
+/* ============================================================
+   Backup — export / import everything as one JSON file
+   ============================================================ */
+const BACKUP_PREFS = k => /tradingsite:|^variance-lab-v2$|^rcc:tab$/.test(k);
+function backupData(){
+  const prefs = {};
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (BACKUP_PREFS(k)) prefs[k] = localStorage.getItem(k); } } catch {}
+  return {app: 'risk-control-console', version: 1, exportedAt: new Date().toISOString(), docs: clone(S), prefs};
+}
+async function saveFile(filename, data){
+  let dl = null; try { dl = window.claude?.use ? await window.claude.use('downloads') : null; } catch {}
+  if (dl) { await dl.save({filename, data}); return; }
+  const u = URL.createObjectURL(new Blob([data], {type: 'application/json'})), a = document.createElement('a');
+  a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1000);
+}
+function showBackupAge(){
+  const t = Number(LS.raw('rcc:lastBackup')), b = $('#bk-export');
+  if (!b) return;
+  const days = t > 0 ? Math.floor((Date.now() - t) / 864e5) : null;
+  b.title = 'Save every account, backtest, cost, payout and setting to one file' + (days == null ? ' — no backup yet' : ` — last backup ${days === 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago'}`);
+  b.classList.toggle('primary', days == null ? hasAnyData() : days >= 7);
+}
+const hasAnyData = () => S.accounts.items.length > 0 || S.backtest.items.length > 0 || S.spend.entries.length > 0 || S.spend.payouts.length > 0;
+async function exportBackup(){
+  const d = new Date(), stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  try { await saveFile(`risk-console-backup-${stamp}.json`, JSON.stringify(backupData(), null, 2)); LS.setRaw('rcc:lastBackup', String(Date.now())); showBackupAge(); toast('Backup saved.'); }
+  catch (e) { if (e?.code !== 'declined') toast('Backup failed: ' + (e?.message || e?.code || 'error')); }
+}
+async function importBackup(file){
+  let b;
+  try { b = JSON.parse(await file.text()); } catch { toast('That file is not a valid backup.'); return; }
+  if (b?.app !== 'risk-control-console' || !b.docs) { toast('That file is not a Risk Control Console backup.'); return; }
+  const n = b.docs.accounts?.items?.length ?? 0, when = b.exportedAt ? new Date(b.exportedAt).toLocaleString() : 'unknown date';
+  if (!await confirmBox(`Replace everything here with the backup from ${when} (${n} account${n === 1 ? '' : 's'})? Current data on this page will be overwritten.`, 'Replace')) return;
+  for (const k of Object.keys(DOC_DEFAULTS)) { S[k] = {...clone(DOC_DEFAULTS[k]), ...(b.docs[k] || {})}; save(k); }
+  try { for (const [k, v] of Object.entries(b.prefs || {})) if (BACKUP_PREFS(k) && typeof v === 'string') localStorage.setItem(k, v); } catch {}
+  setSync('', 'Restoring…');
+  for (let i = 0; i < 100 && Object.keys(DOC_DEFAULTS).some(k => store.writing[k] || store.dirty[k]); i++) await sleep(100);
+  location.reload();
+}
+$('#bk-export').addEventListener('click', exportBackup);
+$('#bk-import').addEventListener('click', () => $('#bk-file').click());
+$('#bk-file').addEventListener('change', e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) importBackup(f); });
+showBackupAge();
+
+/* Offline support when hosted (works with no internet after the first visit) */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+</script>
+</body>
+</html>
