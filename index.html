@@ -295,6 +295,9 @@ const TYPE_DEFAULTS = {
   'Lucid Flex 150K':[15e4,4500],'Alpha Zero 150K':[15e4,4500],'FTMO Pro 150K':[15e4,4500],
 };
 
+/* Usual eval prices (from the original site's calculator), keyed by account type */
+const DEFAULT_EVAL_PRICE = {'Topstep 50K': 49, 'Lucid Flex 50K': 84.5, 'Tradeify Select': 111, 'MFF Rapid EOD': 77, 'FundedSeat Standard Daily': 79, 'FundedNext 50K Flex': 70};
+
 /* ============================ helpers ============================ */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -556,7 +559,11 @@ function Manager(root, variant){
     checks: `${P}tradingsite:account-check-overrides`, firm: `${P}tradingsite:account-filter-firm`, type: `${P}tradingsite:account-filter-type`,
     dayStarted: `${P}tradingsite:account-day-started-at`};
   const BT_FORM = {firmName: 'Topstep 50K', accountNumber: '', accountType: 'EVALUATION', startingBalance: '50000', currentBalance: '50000', currentBuffer: '2000', dailyLossLimit: '2000', notes: ''};
-  const BLANK = {firmName: '', accountNumber: '', accountType: 'EVALUATION', startingBalance: '', currentBalance: '', currentBuffer: '', dailyLossLimit: '', notes: ''};
+  const BLANK = {firmName: '', accountNumber: '', accountType: 'EVALUATION', startingBalance: '', currentBalance: '', currentBuffer: '', dailyLossLimit: '', notes: '', cost: ''};
+  /* Cost paid per account, logged to Spend when accounts are added. Defaults to the last price used for that account type. */
+  const PRICE_KEY = 'rcc:last-cost-by-type';
+  const lastPrices = () => LS.get(PRICE_KEY, {}) || {};
+  const priceFor = (firm, type) => { const p = lastPrices()[`${firm}|${type}`]; if (p != null) return String(p); return type === 'EVALUATION' && DEFAULT_EVAL_PRICE[firm] != null ? String(DEFAULT_EVAL_PRICE[firm]) : ''; };
   const st = {form: {...(BT ? BT_FORM : BLANK)}, plan: PLAN_STD, count: 1, error: null, busy: false,
     edit: null, editVal: '', sort: 'default', order: [], pnl: {}, checks: {}, firm: 'all', type: 'all', dayStarted: null,
     undo: [], dragId: null, bk: {bankroll: '', passRate: '', enabled: false}};
@@ -718,6 +725,20 @@ function Manager(root, variant){
     const made = [];
     for (let i = 0; i < count; i++) made.push(BT ? buildAccount(i) : buildAccount());
     S[docKey].items = [...list(), ...made]; persist();
+    if (!BT) {
+      const f = st.form, each = Number(f.cost);
+      if (f.cost.trim() !== '' && Number.isFinite(each) && each >= 0) { const p = lastPrices(); p[`${f.firmName}|${f.accountType}`] = each; LS.set(PRICE_KEY, p); }
+      if (f.cost.trim() !== '' && Number.isFinite(each) && each > 0) {
+        const d = new Date(), date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const cat = f.accountType === 'EVALUATION' ? 'eval_fee' : f.accountType === 'FUNDED' ? 'activation' : 'other';
+        const acct = f.accountNumber.trim();
+        S.spend.entries.push({id: newId(), category: cat, firm: f.firmName.trim() || null, quantity: count, amount: Math.round(each * count * 100) / 100, date,
+          description: acct ? `Added on dashboard: ${acct}` : 'Added on dashboard', createdAt: d.toISOString()});
+        S.spend.entries.sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+        save('spend');
+        toast(`Logged ${usd2(Math.round(each * count * 100) / 100)} to Spend${count > 1 ? ` (${count} × ${usd2(each)})` : ''}.`);
+      }
+    }
     st.form = {...(BT ? BT_FORM : BLANK)}; st.count = 1; st.error = null;
     renderForm(); renderRoster();
   }
@@ -791,6 +812,7 @@ function Manager(root, variant){
         ${inp('currentBalance', 'Current balance (USD)', 'type="number" min="0" step="any" required')}
         ${inp('currentBuffer', 'Distance to max loss', 'type="number" step="any" placeholder="Use negative number if underwater"')}
         ${inp('dailyLossLimit', 'Daily loss limit (optional)', 'type="number" min="0" step="any" placeholder="Overrides preset risk"')}
+        ${BT ? '' : inp('cost', `Cost paid ($ each)${st.count > 1 ? ` × ${st.count}` : ''}`, 'type="number" min="0" step="any" placeholder="Leave blank to skip" title="Logged to the Spend page when you add the account"')}
       </div>
       ${BT ? '' : `<label class="f"><span>Notes</span><textarea name="notes" rows="2" maxlength="500" placeholder="Optional context about drawdown or restrictions.">${esc(f.notes)}</textarea></label>`}
       ${st.error ? `<p class="err">${esc(st.error)}</p>` : ''}
@@ -810,11 +832,11 @@ function Manager(root, variant){
   slot('form').addEventListener('change', e => {
     const t = e.target, n = t.name;
     if (n === 'plan') { st.plan = t.value; renderForm(); return; }
-    if (n === 'accountType') { st.form.accountType = t.value; return; }
+    if (n === 'accountType') { st.form.accountType = t.value; if (!BT) { st.form.cost = priceFor(st.form.firmName, t.value); renderForm(); } return; }
     if (n === 'firmName') {
       const v = t.value;
       if (BT) { st.form = {...st.form, firmName: v, dailyLossLimit: String(btDll(v))}; }
-      else { const d = TYPE_DEFAULTS[v]; st.form = d ? {...st.form, firmName: v, startingBalance: String(d[0]), currentBalance: String(d[0]), currentBuffer: String(d[1])} : {...st.form, firmName: v}; }
+      else { const d = TYPE_DEFAULTS[v]; st.form = d ? {...st.form, firmName: v, startingBalance: String(d[0]), currentBalance: String(d[0]), currentBuffer: String(d[1])} : {...st.form, firmName: v}; st.form.cost = priceFor(v, st.form.accountType); }
       renderForm();
     }
   });
@@ -823,6 +845,7 @@ function Manager(root, variant){
     const c = $('input[name=count]', slot('form')); if (c && document.activeElement !== c) c.value = st.count;
     const f = st.form, btn = $('button[type=submit]', slot('form'));
     btn.textContent = BT ? (st.count > 1 ? `Add ${st.count} ${f.firmName || 'Topstep 50K'} evals` : `Add ${f.firmName || 'Topstep 50K'} eval`) : (st.count > 1 ? `Add ${st.count} accounts` : 'Add account');
+    const cl = $('input[name=cost]', slot('form'))?.closest('label')?.querySelector('span'); if (cl) cl.textContent = `Cost paid ($ each)${st.count > 1 ? ` × ${st.count}` : ''}`;
   }
   slot('form').addEventListener('click', e => { const b = e.target.closest('[data-count]'); if (b) { st.count = Number(b.dataset.count); updateCountUi(); } });
   slot('form').addEventListener('submit', e => {
