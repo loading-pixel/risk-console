@@ -149,6 +149,9 @@ td.empty{text-align:center;color:var(--muted);padding:28px}
 .tick:disabled{opacity:.5}
 input.pnl{width:92px;padding:5px 8px;font-family:var(--mono);font-size:13px}
 input.cell{padding:4px 6px;font-size:13px;width:130px}
+/* Account roster: same font as Firm/Type, even-width digits, bold account # and balance */
+[data-slot="tbody"] td.num,[data-slot="tbody"] .mono,[data-slot="tbody"] input.cell{font-family:var(--sans);font-variant-numeric:tabular-nums}
+[data-slot="tbody"] td[data-edit="currentBalance"],[data-slot="tbody"] span[data-edit="accountNumber"]{font-weight:600}
 .cellflex{display:flex;align-items:center;gap:8px}
 .handle{cursor:grab;color:var(--faint);user-select:none;font-size:15px;line-height:1}
 .arrows{display:flex;flex-direction:column}
